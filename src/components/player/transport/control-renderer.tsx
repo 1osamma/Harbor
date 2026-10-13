@@ -28,6 +28,8 @@ import {
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { CustomIcon, renderCustomIconControl } from "./custom-icon-renderer";
 import { QualityInfo } from "./quality-badge";
+import { TitleEpisodeRating } from "./title-episode-rating";
+import type { EpisodeRating } from "@/lib/player-shells/types";
 import { hdrFormatLabel, realQualityLabel } from "@/lib/player/resolution-label";
 import { ThreeLiquidGlassSurface } from "@/components/ThreeLiquidGlassSurface";
 import { FullscreenClock } from "@/components/player/fullscreen-clock";
@@ -111,6 +113,7 @@ export type ControlContext = {
   titleClickable?: boolean;
   titleScale?: number;
   titleSeriesFirst?: boolean;
+  episodeRating?: EpisodeRating | null;
   onBack?: () => void;
   onTitleClick?: () => void;
   meta?: Meta;
@@ -253,6 +256,7 @@ export function renderControl(id: PlayerControlId, ctx: ControlContext): ReactNo
               className="text-white/70 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
             >
               {secondary}
+              <TitleEpisodeRating rating={ctx.episodeRating} />
             </p>
           )}
         </>

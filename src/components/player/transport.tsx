@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { SubtitleAddHandler } from "@/lib/player/subtitle-load";
 import type { Meta } from "@/lib/cinemeta";
+import type { EpisodeRating } from "@/lib/player-shells/types";
 import { CastModal } from "./cast-modal";
 import type { DownloadStatus } from "@/views/player/hooks/use-video-download";
 import { TransportStremio } from "./transport-stremio";
@@ -71,6 +72,7 @@ export function Transport({
   canPickAnother,
   title,
   subtitle,
+  episodeRating,
   resolution,
   quality,
   hoverTitle,
@@ -136,6 +138,7 @@ export function Transport({
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  episodeRating?: EpisodeRating | null;
   resolution?: string | null;
   quality?: string | null;
   hoverTitle?: string;
@@ -265,6 +268,7 @@ export function Transport({
         canPickAnother={canPickAnother}
         title={title}
         subtitle={subtitle}
+        episodeRating={episodeRating}
         resolution={resolution}
         quality={quality}
         hasPrevEp={hasPrevEp}
@@ -374,6 +378,7 @@ export function Transport({
     seekForwardStepSec: settings.seekForwardStepSec,
     title,
     subtitle,
+    episodeRating,
     titleClickable,
     titleScale: settings.playerTitleScale,
     titleSeriesFirst: settings.playerTitleSeriesFirst,

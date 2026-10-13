@@ -11,6 +11,8 @@ import type { VolumeHudPosition, VolumeIndicatorState } from "@/components/playe
 import type { ParentalCategory } from "@/lib/providers/harbor-imdb";
 import type { PlayerBridge, PlayerSnapshot } from "@/lib/player/bridge";
 import { writePlayerPrefs } from "@/lib/player-prefs";
+import { useSettings } from "@/lib/settings";
+import { useCurrentEpisodeRating } from "@/components/player/episode-panel/use-imdb-episode-ratings";
 import type { PlayerSrc, PlayEpisode } from "@/lib/view";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { BpTenFootLayer } from "./bp-ten-foot";
@@ -200,6 +202,12 @@ export type PlayerOverlayLayersProps = {
 };
 
 export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOverlayLayersProps) {
+  const { settings } = useSettings();
+  const episodeRating = useCurrentEpisodeRating(
+    p.src.meta,
+    p.src.episode,
+    settings.showEpisodeRating,
+  );
   const roomAvatarTopLeft =
     p.inRoom && !p.avatarsHidden && p.participants.length > 0 && p.avatarsCorner === "top-left";
   const roomAvatarTopRight =
@@ -391,6 +399,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
           canPickAnother={p.canPickAnother}
           title={p.src.title}
           subtitle={p.src.subtitle}
+          episodeRating={episodeRating}
           resolution={p.src.streamRef?.resolution}
           quality={p.src.streamRef?.quality}
           releaseName={p.src.streamRef?.title ?? p.src.streamRef?.parsedTitle}

@@ -7,6 +7,7 @@ import { parseKitsuId } from "@/lib/providers/kitsu";
 import { splitFranchiseDisplaySeason } from "@/lib/streams/anime-identity-core";
 import { useSettings } from "@/lib/settings";
 import { EpisodeRatingBadge } from "@/views/detail/episode-rating-badge";
+import { resolveEpisodeRating } from "./use-imdb-episode-ratings";
 import { useT } from "@/lib/i18n";
 
 function formatAirDate(d: string): string {
@@ -38,9 +39,7 @@ export function EpisodeRow({
 }) {
   const t = useT();
   const { settings } = useSettings();
-  const imdbVal = imdbRating != null && imdbRating > 0 ? imdbRating : null;
-  const tmdbVal = episode.rating != null && episode.rating > 0 ? episode.rating : null;
-  const ratingVal = imdbVal ?? tmdbVal;
+  const rating = resolveEpisodeRating(episode, imdbRating);
   const hasMeta = !!episode.airDate || episode.runtime != null;
   const partSeason =
     splitFranchiseDisplaySeason(parseKitsuId(episode.kitsuStreamId ?? "")) ??
@@ -82,9 +81,9 @@ export function EpisodeRow({
           <span className="absolute bottom-1.5 start-2 text-[10.5px] font-bold uppercase tracking-[0.18em] text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]">
             {epLabel}
           </span>
-          {settings.showEpisodeRating && ratingVal != null && (
+          {settings.showEpisodeRating && rating != null && (
             <span className="absolute bottom-1.5 end-1.5 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-              <EpisodeRatingBadge value={ratingVal} isImdb={imdbVal != null} />
+              <EpisodeRatingBadge value={rating.value} isImdb={rating.isImdb} />
             </span>
           )}
           {watched && !isCurrent && (

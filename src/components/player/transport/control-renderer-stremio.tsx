@@ -38,6 +38,8 @@ import { Anime4kMenu } from "./anime4k-menu";
 import { ShaderMenu } from "./shader-menu";
 import { HdrToggleStremioBtn } from "./hdr-toggle-btn";
 import { QualityInfo } from "./quality-badge";
+import { TitleEpisodeRating } from "./title-episode-rating";
+import type { EpisodeRating } from "@/lib/player-shells/types";
 import { RtxHdrToggleStremioBtn } from "./rtx-hdr-toggle-btn";
 import { RtxVsrToggleStremioBtn } from "./rtx-vsr-toggle-btn";
 import type { Anime4kChoice } from "@/views/player/hooks/use-anime4k";
@@ -88,6 +90,7 @@ export type StremioRenderCtx = {
   fullscreen?: boolean;
   title?: string;
   subtitle?: string;
+  episodeRating?: EpisodeRating | null;
   resolution?: string | null;
   quality?: string | null;
   releaseName?: string | null;
@@ -205,6 +208,7 @@ export function RenderedStremioControl({
                 {ctx.subtitle && (
                   <span className="shrink-0 text-[13px] font-normal text-white/55">
                     {ctx.subtitle}
+                    <TitleEpisodeRating rating={ctx.episodeRating} />
                   </span>
                 )}
                 {!showQuality && <QualityInfo labels={[res, hdr]} show={ctx.active} />}
@@ -228,13 +232,19 @@ export function RenderedStremioControl({
           <h1 className="truncate text-[19px] font-medium leading-tight">{ctx.title}</h1>
           {showQuality ? (
             <>
-              {ctx.subtitle && <p className="truncate text-[13px] text-white/55">{ctx.subtitle}</p>}
+              {ctx.subtitle && (
+                <p className="truncate text-[13px] text-white/55">
+                  {ctx.subtitle}
+                  <TitleEpisodeRating rating={ctx.episodeRating} />
+                </p>
+              )}
               <p className="truncate text-[12px] tabular-nums text-white/50">{ctx.quality}</p>
             </>
           ) : (
             (ctx.subtitle || res) && (
               <p className="flex items-center gap-1.5 text-[13px] text-white/55">
                 {ctx.subtitle && <span className="truncate">{ctx.subtitle}</span>}
+                {ctx.subtitle && <TitleEpisodeRating rating={ctx.episodeRating} />}
                 {res && (
                   <span className="shrink-0 rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white/80">
                     {res}

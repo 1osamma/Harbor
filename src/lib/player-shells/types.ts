@@ -3,6 +3,8 @@ import type { Meta } from "@/lib/cinemeta";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { SubtitleAddHandler } from "@/lib/player/subtitle-load";
 
+export type EpisodeRating = { value: number; isImdb: boolean };
+
 export type PlayerShellProps = {
   snap: PlayerSnapshot;
   isLive?: boolean;
@@ -42,6 +44,7 @@ export type PlayerShellProps = {
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  episodeRating?: EpisodeRating | null;
   resolution?: string | null;
   quality?: string | null;
   releaseName?: string | null;

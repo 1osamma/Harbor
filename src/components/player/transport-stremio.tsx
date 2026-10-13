@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PlayerCapabilities, PlayerSnapshot } from "@/lib/player/bridge";
 import type { SubtitleAddHandler } from "@/lib/player/subtitle-load";
 import type { Meta } from "@/lib/cinemeta";
+import type { EpisodeRating } from "@/lib/player-shells/types";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import {
   controlsInSlot,
@@ -61,6 +62,7 @@ export type TransportStremioProps = {
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  episodeRating?: EpisodeRating | null;
   resolution?: string | null;
   quality?: string | null;
   releaseName?: string | null;
@@ -125,6 +127,7 @@ export function TransportStremio(p: TransportStremioProps) {
     canPickAnother,
     title,
     subtitle,
+    episodeRating,
     resolution,
     quality,
     releaseName,
@@ -225,6 +228,7 @@ export function TransportStremio(p: TransportStremioProps) {
     fullscreen,
     title,
     subtitle,
+    episodeRating,
     resolution,
     quality,
     releaseName,

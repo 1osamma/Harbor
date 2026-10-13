@@ -44,6 +44,7 @@ export const ShellLayer = memo(function ShellLayer({
   canPickAnother,
   title,
   subtitle,
+  episodeRating,
   resolution,
   quality,
   releaseName,
@@ -102,6 +103,7 @@ export const ShellLayer = memo(function ShellLayer({
   canPickAnother: boolean;
   title: string;
   subtitle?: string;
+  episodeRating?: PlayerShellProps["episodeRating"];
   resolution?: string | null;
   quality?: string | null;
   releaseName?: string | null;
@@ -216,6 +218,7 @@ export const ShellLayer = memo(function ShellLayer({
       canPickAnother={canPickAnother}
       title={title}
       subtitle={subtitle}
+      episodeRating={episodeRating}
       resolution={resolution}
       quality={quality}
       releaseName={releaseName}
