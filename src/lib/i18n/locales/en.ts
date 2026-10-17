@@ -198,6 +198,8 @@ const en: Record<string, string> = {
   "chrome.backToTop": "Back to top",
   "chrome.locked": "Locked",
   "chrome.parentalOn": "Parental controls on",
+  "chrome.safetyNetHeading": "Navigation",
+  "chrome.safetyNetLabel": "Menu",
   "chrome.lockedRequiresPin": "{label} (locked, requires PIN)",
   "chrome.lockedShort": "{label} · locked",
   "chrome.harborHome": "Harbor home",

@@ -78,6 +78,7 @@ import { CustomCodeMount } from "@/components/custom-code-mount";
 import { MemoryHud } from "@/components/memory-hud";
 import { Profiled } from "@/components/profiled";
 import { OfflineBanner } from "@/chrome/offline-banner";
+import { CustomLayoutSafetyNet } from "@/chrome/custom-layout-safety-net";
 
 const MobileShell = lazy(() =>
   import("@/views/mobile/mobile-shell").then((m) => ({ default: m.MobileShell })),
@@ -2192,6 +2193,9 @@ function Shell({ onReady }: { onReady?: () => void }) {
               <div className="harbor-bp-proxy">
                 <BigPictureEntryButton hidden={chromeHidden} />
               </div>
+            )}
+            {!settingsTop && !playerActive && !pickerTop && layout === "custom" && (
+              <CustomLayoutSafetyNet />
             )}
             {!immersive && layout === "rail" && !settingsTop && (
               <div
