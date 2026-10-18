@@ -1,8 +1,9 @@
 import { safeFetch } from "@/lib/safe-fetch";
 import { kitsuToTvdb } from "./anime-mapping";
+import { HARBOR_TVDB_BASE } from "@/lib/config/endpoints";
 
-const PROXY = "https://harbor.site/api/tvdb/images";
-const ART_PROXY = "https://harbor.site/api/tvdb/artwork";
+const PROXY = `${HARBOR_TVDB_BASE}/api/tvdb/images`;
+const ART_PROXY = `${HARBOR_TVDB_BASE}/api/tvdb/artwork`;
 
 export type TvdbImageMap = Record<string, string>;
 
@@ -71,12 +72,19 @@ export function pickTvdbImage(
   },
 ): string | null {
   const abs = ep.absoluteNumber ?? ep.number;
+  // A sequel cour's entry-local numbers restart at 1 while its IMDb identity
+  // points at a later season (Kitsu labels every cour "season 1"), so the
+  // seasonNumber:number pair would resolve to the first season's episode.
+  const localPairUsable =
+    ep.seasonNumber != null &&
+    (ep.imdbSeason == null || ep.imdbSeason === ep.seasonNumber) &&
+    (ep.imdbEpisode == null || ep.imdbEpisode === ep.number);
   return (
     map[`abs${abs}`] ??
     (ep.imdbSeason != null && ep.imdbEpisode != null
       ? map[`s${ep.imdbSeason}e${ep.imdbEpisode}`]
       : undefined) ??
-    (ep.seasonNumber != null ? map[`s${ep.seasonNumber}e${ep.number}`] : undefined) ??
+    (localPairUsable ? map[`s${ep.seasonNumber}e${ep.number}`] : undefined) ??
     null
   );
 }

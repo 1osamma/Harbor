@@ -1,10 +1,19 @@
 import type { Episode, Season } from "@/lib/providers/tmdb";
 import { tvdbEpisodesByType, tvdbSeasonNames, tvdbSeriesByRemote, type TvdbEpisode } from "./tvdb";
-import { readOrderCache, writeOrderCache } from "./tvdb-order-cache";
+import { isStaleTvdbOrder, readOrderCache, writeOrderCache } from "./tvdb-order-cache";
+import { firstRealEpisodeText } from "./episode-placeholder";
+import { episodeTextLanguage } from "@/lib/episode-text-language";
+
+export type OrderedEpisode = Episode & {
+  nameEn?: string;
+  overviewEn?: string;
+  nameEnLanguage?: string;
+  overviewEnLanguage?: string;
+};
 
 export type TvdbOrder = {
   seasons: Season[];
-  bySeason: Map<number, Episode[]>;
+  bySeason: Map<number, OrderedEpisode[]>;
   absByEpId: Map<number, number>;
   imageByAbs: Map<number, string>;
 };
@@ -20,7 +29,11 @@ export function seasonDateRange(eps: Episode[]): { from?: string; to?: string } 
   return { from, to };
 }
 
-const orderCache = new Map<string, TvdbOrder | null>();
+const orderCache = new Map<string, { t: number; order: TvdbOrder }>();
+// A session can outlive a provider's data correction (e.g. a "TBA" placeholder
+// becomes the real name right after an episode airs), so the in-memory order
+// must expire instead of pinning stale titles until the next restart.
+const ORDER_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export async function fetchTvdbOrder(
   apiKey: string,
@@ -43,15 +56,23 @@ export async function fetchTvdbOrderBySeriesId(
   if (!seriesId) return null;
   const typeKey = lang ? `${seasonType}:${lang}` : seasonType;
   const cacheKey = `${seriesId}:${typeKey}`;
-  if (orderCache.has(cacheKey)) return orderCache.get(cacheKey) ?? null;
+  const cached = orderCache.get(cacheKey);
+  if (
+    cached &&
+    Date.now() - cached.t < ORDER_CACHE_TTL_MS &&
+    !isStaleTvdbOrder(cached.order.bySeason)
+  ) {
+    return cached.order;
+  }
+  if (cached) orderCache.delete(cacheKey);
   const persisted = readOrderCache(seriesId, typeKey);
   if (persisted) {
-    orderCache.set(cacheKey, persisted);
+    orderCache.set(cacheKey, { t: Date.now(), order: persisted });
     return persisted;
   }
   const result = await build(apiKey, seriesId, seasonType, lang).catch(() => null);
   if (result) {
-    orderCache.set(cacheKey, result);
+    orderCache.set(cacheKey, { t: Date.now(), order: result });
     writeOrderCache(seriesId, typeKey, result);
   }
   return result;
@@ -74,17 +95,27 @@ async function build(
   ]);
   const altEps = slug === "default" ? defaultEps : await tvdbEpisodesByType(apiKey, seriesId, slug);
   if (altEps.length === 0) return null;
-  const transAlt: TvdbEpisode[] = lang
-    ? await tvdbEpisodesByType(apiKey, seriesId, slug, lang).catch(() => [])
-    : [];
+  // Translations in the requested language. When a translation is missing, TVDB falls back to
+  // the original (e.g. Japanese for anime) name, which we keep so users see text in their
+  // requested language first. The English translation is always fetched as the base/fallback —
+  // the language-less default fetch returns the series' original language (Japanese for anime),
+  // so without this English users would see original-language names — and is carried alongside
+  // as nameEn/overviewEn for consumers that need an English fallback when no localized text exists.
+  const requestedLang = lang && lang !== "eng" ? lang : undefined;
+  const [transAlt, transEn] = await Promise.all([
+    requestedLang ? tvdbEpisodesByType(apiKey, seriesId, slug, requestedLang).catch(() => []) : Promise.resolve<TvdbEpisode[]>([]),
+    tvdbEpisodesByType(apiKey, seriesId, slug, "eng").catch(() => []),
+  ]);
   const transById = new Map(transAlt.map((e) => [e.id, e] as const));
+  const transEnById = new Map(transEn.map((e) => [e.id, e] as const));
 
   const canonical = new Map<number, { season: number; episode: number }>();
   for (const e of defaultEps) {
     if (e.seasonNumber >= 1) canonical.set(e.id, { season: e.seasonNumber, episode: e.number });
   }
 
-  const bySeason = new Map<number, Episode[]>();
+  const bySeason = new Map<number, OrderedEpisode[]>();
+  const altBySeason = new Map<number, Array<{ season: number; episode: number }>>();
   const seenEpisodeId = new Set<number>();
   for (const e of altEps) {
     if (seenEpisodeId.has(e.id)) continue;
@@ -93,19 +124,58 @@ async function build(
     if (joinedClean && c.season < 1) continue;
     const bucketKey = joinedClean || rawAbsolute ? 1 : e.seasonNumber;
     const bucket = bySeason.get(bucketKey) ?? [];
+    const altBucket = altBySeason.get(bucketKey) ?? [];
+    altBucket.push({ season: e.seasonNumber, episode: e.number });
+    altBySeason.set(bucketKey, altBucket);
     const tr = transById.get(e.id);
+    const trEn = transEnById.get(e.id);
+    const name = firstRealEpisodeText([tr?.name, trEn?.name, e.name]) ?? "";
+    const overview = firstRealEpisodeText([tr?.overview, trEn?.overview, e.overview]) ?? "";
+    const nameEn = firstRealEpisodeText([trEn?.name, e.name]);
+    const overviewEn = firstRealEpisodeText([trEn?.overview, e.overview]);
+    const fieldLanguage = (value: string | undefined, field: "name" | "overview") => {
+      const languageField = field === "name" ? "nameLanguage" : "overviewLanguage";
+      if (value && value === tr?.[field]) {
+        return episodeTextLanguage(value, lang, trEn?.[languageField] === "und" ? undefined : trEn?.[field], tr?.[languageField] ? [tr[languageField]] : undefined);
+      }
+      if (value && value === trEn?.[field]) return trEn?.[languageField] ?? episodeTextLanguage(value, "en");
+      return e[languageField] ?? "und";
+    };
+    // A localized "TBA" must not shadow a real name in another list: an aired
+    // episode often has its English title while the requested-language or
+    // original-language row still carries the placeholder. Keep the placeholder
+    // only when no list has a real name yet (unaired episodes).
     bucket.push({
       id: e.id,
       seasonNumber: c.season,
       episodeNumber: c.episode,
-      name: (tr?.name || e.name) ?? "",
-      overview: (tr?.overview || e.overview) ?? "",
-      stillPath: e.image ?? null,
+      name,
+      overview,
+      nameEn,
+      overviewEn,
+      nameLanguage: fieldLanguage(name, "name"),
+      overviewLanguage: fieldLanguage(overview, "overview"),
+      nameEnLanguage: nameEn === trEn?.name ? trEn?.nameLanguage ?? episodeTextLanguage(nameEn, "en") : e.nameLanguage ?? "und",
+      overviewEnLanguage: overviewEn === trEn?.overview ? trEn?.overviewLanguage ?? episodeTextLanguage(overviewEn, "en") : e.overviewLanguage ?? "und",
+      stillPath: null,
+      stillUrl: e.image ?? undefined,
       airDate: e.aired ?? null,
       runtime: e.runtime ?? null,
       voteAverage: null,
     });
     bySeason.set(bucketKey, bucket);
+  }
+  for (const [key, bucket] of bySeason) {
+    const keys = bucket.map((x) => `${x.seasonNumber}:${x.episodeNumber}`);
+    if (new Set(keys).size === keys.length) continue;
+    const alt = altBySeason.get(key);
+    if (!alt || alt.length !== bucket.length) continue;
+    const altKeys = alt.map((x) => `${x.season}:${x.episode}`);
+    if (new Set(altKeys).size !== altKeys.length) continue;
+    bucket.forEach((ep, i) => {
+      ep.seasonNumber = alt[i].season;
+      ep.episodeNumber = alt[i].episode;
+    });
   }
   if (bySeason.size === 0) return null;
   if (joinedClean) {

@@ -3,11 +3,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SHA256 = "e9c87d19055bc5a82771b2b48e9fbae047bd5180603f5a1aaae10c90ca690467";
-const TAG = process.env.HARBOR_LIBMPV_TAG ?? "mpvdll";
+const SHA256 = "0a81c004aae0ee7d512b9a26e38f66281f9591e84e1663215cc3a36a4bde6f6a";
+// The pinned DLL rides on the community build-dependencies release; the SHA-256 below is the authority.
+const TAG = process.env.HARBOR_LIBMPV_TAG ?? "community-build-dependencies-0.9.132";
 const url =
   process.env.HARBOR_LIBMPV_URL ??
-  `https://github.com/harborstremio/harbor/releases/download/${TAG}/libmpv-2.dll`;
+  `https://github.com/Harborofficial/Harbor/releases/download/${TAG}/libmpv-2.dll`;
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dest = join(root, "src-tauri", "libmpv", "libmpv-2.dll");

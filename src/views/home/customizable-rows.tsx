@@ -1,8 +1,9 @@
 import { ChevronRight } from "lucide-react";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { LazyMount } from "@/components/lazy-mount";
+import { releaseYear } from "@/lib/release-info";
 import { PickCard } from "@/components/pick-card";
-import { Row } from "@/components/row";
+import { Row, usePosterRow } from "@/components/row";
 import { CustomSourcesRow } from "@/components/custom-sources-row";
 import { TopRankCard } from "@/components/top-rank-card";
 import { LetterboxdRowMenu } from "@/components/letterboxd/letterboxd-row-menu";
@@ -12,18 +13,61 @@ import type { HomeRowCustomization } from "@/lib/home-customization";
 import { useView } from "@/lib/view";
 import type { HomeRow } from "./home-types";
 import { RowControls } from "./row-controls";
-import { watchTitleKey, type WatchedSet } from "@/lib/playback-history";
+import type { WatchedSet } from "@/lib/playback-history";
+import { collapseWatchedKeys, isTitleWatched } from "@/lib/watched-title";
 import { useSettings } from "@/lib/settings";
 
-function metaTitleKey(meta: { id?: string }): string | null {
-  const id = meta.id;
-  if (!id) return null;
-  if (/^tt\d+$/.test(id)) return `imdb:${id}`;
-  if (id.startsWith("tmdb:")) {
-    const num = Number(id.split(":")[2]);
-    if (Number.isFinite(num)) return `tmdb:${num}`;
-  }
-  return null;
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
+const BUILT_IN_HOME_ROW_TITLES: Readonly<Record<string, string>> = {
+  "tmdb-trending-movies": "Trending This Week",
+  "tmdb-now-playing": "In Theaters Now",
+  "tmdb-popular-movies": "Popular Movies",
+  "tmdb-trending-tv": "Trending Series",
+  "tmdb-on-the-air": "On The Air",
+  "tmdb-popular-tv": "Popular Series",
+  "tmdb-top-rated-tv": "Top Rated Series",
+  "tmdb-top-rated-movies": "Top Rated Movies",
+  "cm-top-movies": "Top 10 on Stremio",
+  "cm-popular": "Popular Movies",
+  "cm-drama": "Top 10 Drama",
+  "cm-trending-tv": "Trending Series",
+  "cm-comedy": "Top 10 Comedy",
+  "cm-action": "Action Hits",
+  "cm-scifi": "Sci-Fi & Fantasy",
+  "cm-thriller": "Thrillers",
+  "cm-animation": "Animated Movies",
+  "cm-horror": "Horror",
+  "cm-romance": "Romance",
+  "cm-adventure": "Adventure",
+  "cm-documentary": "Documentaries",
+  "cm-mystery": "Mystery",
+  "cm-fantasy": "Fantasy",
+  "cm-drama-tv": "Drama Series",
+  "cm-comedy-tv": "Comedy Series",
+  "cm-crime-tv": "Crime Series",
+  "anime-airing": "Trending Anime",
+  "anime-new": "New Anime Releases",
+  "anime-popular": "Popular Anime",
+  "anime-upcoming": "Upcoming Anime",
+  "harbor-favorites": "Favorites",
+  "harbor-watchlist": "My Watchlist",
+  "trakt-watchlist": "Your Trakt Watchlist",
+  "trakt-upcoming": "Up Next on Trakt",
+  "trakt-recs-movies": "Trakt Recommends: Movies",
+  "trakt-recs-shows": "Trakt Recommends: Series",
+  "simkl-watching-shows": "Watching TV Shows on Simkl",
+  "simkl-watching-anime": "Watching Anime on Simkl",
+  "simkl-plantowatch-movies": "Plan to Watch Movies on Simkl",
+  "simkl-plantowatch-shows": "Plan to Watch TV Shows on Simkl",
+  "simkl-plantowatch-anime": "Plan to Watch Anime on Simkl",
+  "simkl-upcoming": "Up Next on Simkl",
+  "simkl-trending": "Simkl Trending Today",
+};
+
+export function displayRowTitle(row: HomeRow, renamed: boolean, t: Translate): string {
+  if (renamed) return row.name;
+  return BUILT_IN_HOME_ROW_TITLES[row.key] === row.name ? t(row.name) : row.name;
 }
 
 function isUnreleased(m: { releaseDate?: string; releaseInfo?: string }): boolean {
@@ -31,12 +75,12 @@ function isUnreleased(m: { releaseDate?: string; releaseInfo?: string }): boolea
     const t = Date.parse(m.releaseDate);
     if (!Number.isNaN(t)) return t > Date.now();
   }
-  const yr = m.releaseInfo ? Number.parseInt(m.releaseInfo.slice(0, 4), 10) : NaN;
+  const yr = releaseYear(m.releaseInfo);
   if (!Number.isNaN(yr)) return yr > new Date().getFullYear();
   return false;
 }
 
-function RowTitle({ row }: { row: HomeRow }) {
+function RowTitle({ row, title }: { row: HomeRow; title: string }) {
   const t = useT();
   const { openGrid } = useView();
   const lb = useLetterboxd();
@@ -52,7 +96,10 @@ function RowTitle({ row }: { row: HomeRow }) {
   const menu = isLetterboxd ? (
     <LetterboxdRowMenu
       canMoveUp={lb.catalogOrder.indexOf(catalogId) > 0}
-      canMoveDown={lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 && lb.catalogOrder.indexOf(catalogId) !== -1}
+      canMoveDown={
+        lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 &&
+        lb.catalogOrder.indexOf(catalogId) !== -1
+      }
       hidden={lb.hiddenCatalogs.includes(catalogId)}
       onMoveUp={() => lb.moveCatalog(catalogId, -1)}
       onMoveDown={() => lb.moveCatalog(catalogId, 1)}
@@ -60,15 +107,20 @@ function RowTitle({ row }: { row: HomeRow }) {
     />
   ) : null;
 
-  if (!row.fetcher) return <>{t(row.name)}{badge}{menu}</>;
+  if (!row.fetcher)
+    return (
+      <>
+        {title}
+        {badge}
+        {menu}
+      </>
+    );
   return (
     <button
-      onClick={() =>
-        openGrid({ title: t(row.name), fetcher: row.fetcher!, initial: row.metas })
-      }
+      onClick={() => openGrid({ title, fetcher: row.fetcher!, initial: row.metas, initialPage: 0 })}
       className="group/see inline-flex items-center gap-1.5 text-ink transition-colors hover:text-ink-muted"
     >
-      {t(row.name)}
+      {title}
       {badge}
       <span className="inline-flex items-center gap-0.5 text-[12px] font-medium text-ink-subtle opacity-0 transition-opacity duration-200 group-hover/see:opacity-100">
         {t("See all")}
@@ -86,7 +138,10 @@ function RowTitleExtra({ row }: { row: HomeRow }) {
   return (
     <LetterboxdRowMenu
       canMoveUp={lb.catalogOrder.indexOf(catalogId) > 0}
-      canMoveDown={lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 && lb.catalogOrder.indexOf(catalogId) !== -1}
+      canMoveDown={
+        lb.catalogOrder.indexOf(catalogId) < lb.catalogOrder.length - 1 &&
+        lb.catalogOrder.indexOf(catalogId) !== -1
+      }
       hidden={lb.hiddenCatalogs.includes(catalogId)}
       onMoveUp={() => lb.moveCatalog(catalogId, -1)}
       onMoveDown={() => lb.moveCatalog(catalogId, 1)}
@@ -95,7 +150,10 @@ function RowTitleExtra({ row }: { row: HomeRow }) {
   );
 }
 
-export function CustomizableRows({
+// Memoized on purpose: Home re-renders often while its rows load, and without this every one of
+// those re-renders rebuilt the whole row tree and cascaded into the cards (measured as a single
+// 184ms render). Its props are all stable — useCallback handlers, memoized row arrays, primitives.
+export const CustomizableRows = memo(function CustomizableRows({
   rows,
   editMode,
   customization,
@@ -134,28 +192,15 @@ export function CustomizableRows({
 }) {
   const { openGrid } = useView();
   const t = useT();
+  const posterRow = usePosterRow();
   const { settings } = useSettings();
   const hideUnreleased = settings.hideUnreleased;
-  const watchedTitleKeys = useMemo(() => {
-    const out = new Set<string>();
-    if (!watchedSet) return out;
-    for (const k of watchedSet) {
-      const parts = k.split(":");
-      if (parts.length >= 2) out.add(`${parts[0]}:${parts[1]}`);
-    }
-    return out;
-  }, [watchedSet]);
-  const isWatched = (m: { id: string; name?: string }) => {
-    if (stremioWatched?.has(m.id)) return true;
-    const key = metaTitleKey(m);
-    if (key != null && watchedTitleKeys.has(key)) return true;
-    if (localWatched) {
-      if (localWatched.ids.has(m.id)) return true;
-      const tk = watchTitleKey(m.name);
-      if (tk && localWatched.titles.has(tk)) return true;
-    }
-    return false;
-  };
+  const traktKeys = useMemo(
+    () => collapseWatchedKeys(watchedSet ?? new Set<string>()),
+    [watchedSet],
+  );
+  const isWatched = (m: { id: string; name?: string }) =>
+    isTitleWatched(m, { traktKeys, localWatched, stremioWatched });
   return (
     <>
       {rows.map((row, rowIndex) => {
@@ -163,31 +208,38 @@ export function CustomizableRows({
         if (hidden && !editMode) return null;
         let metas = row.metas.filter((m) => typeof m.id === "string");
         if (homeLanguages && homeLanguages.length > 0) {
-          metas = metas.filter((m) => !m.originalLanguage || homeLanguages.includes(m.originalLanguage));
+          metas = metas.filter(
+            (m) => !m.originalLanguage || homeLanguages.includes(m.originalLanguage),
+          );
         }
         if (hideWatched) metas = metas.filter((m) => !isWatched(m));
         if (hideUnreleased) metas = metas.filter((m) => !isUnreleased(m));
         if (
           (hideWatched || hideUnreleased || (homeLanguages && homeLanguages.length > 0)) &&
           metas.length === 0 &&
-          !editMode &&
           !row.sourceRow
         )
           return null;
         const idx = orderKeys.indexOf(row.key);
+        const title = displayRowTitle(row, row.key in customization.renamed, t);
         const eager = rowIndex < 2;
         const viewAll = row.fetcher
-          ? () => openGrid({ title: t(row.name), fetcher: row.fetcher!, initial: row.metas })
+          ? () => openGrid({ title, fetcher: row.fetcher!, initial: row.metas, initialPage: 0 })
           : undefined;
-        const ranked =
-          (customization.numerals ?? []).includes(row.key) && metas.length >= 10;
+        const ranked = (customization.numerals ?? []).includes(row.key) && metas.length >= 10;
         let rowEl;
         if (row.sourceRow) {
-          rowEl = <CustomSourcesRow sourceRow={row.sourceRow} editMode={editMode} onEditFolderImages={onEditFolderImages} />;
+          rowEl = (
+            <CustomSourcesRow
+              sourceRow={row.sourceRow}
+              editMode={editMode}
+              onEditFolderImages={onEditFolderImages}
+            />
+          );
         } else if (ranked) {
           rowEl = (
             <Row
-              title={<RowTitle row={row} />}
+              title={<RowTitle row={row} title={title} />}
               titleExtra={<RowTitleExtra row={row} />}
               min={180}
               shape="rank"
@@ -202,7 +254,8 @@ export function CustomizableRows({
         } else {
           rowEl = (
             <Row
-              title={<RowTitle row={row} />}
+              {...posterRow}
+              title={<RowTitle row={row} title={title} />}
               titleExtra={<RowTitleExtra row={row} />}
               scrollKey={`home:${row.key}`}
               onEndReached={row.hasMore ? () => onLoadMore(row.key) : undefined}
@@ -215,13 +268,10 @@ export function CustomizableRows({
           );
         }
         return (
-          <div
-            key={row.key}
-            data-scroll-anchor={`row:${row.key}`}
-          >
+          <div key={row.key} data-scroll-anchor={`row:${row.key}`}>
             {editMode && (
               <RowControls
-                name={row.name}
+                name={title}
                 hidden={hidden}
                 canMoveUp={idx > 0}
                 canMoveDown={idx >= 0 && idx < orderKeys.length - 1}
@@ -246,4 +296,4 @@ export function CustomizableRows({
       })}
     </>
   );
-}
+});

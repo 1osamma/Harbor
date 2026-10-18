@@ -99,7 +99,8 @@ export function PinEntry({
     focus();
   };
 
-  const displayTitle = mode === "set" && stage === "confirm" ? t("Confirm your PIN") : title;
+  const displayTitle =
+    mode === "set" && stage === "confirm" ? t("Confirm your PIN") : title;
   const displaySub =
     mode === "set" && stage === "confirm" ? t("Type the same 4-digit PIN again.") : subtitle;
 
@@ -147,7 +148,9 @@ export function PinEntry({
             autoComplete="one-time-code"
             maxLength={4}
             value={pin}
+            readOnly={busy}
             onChange={(e) => {
+              if (busy) return;
               const v = e.target.value.replace(/\D/g, "").slice(0, 4);
               setError(null);
               setPin(v);
