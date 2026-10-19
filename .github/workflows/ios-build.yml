@@ -4,6 +4,9 @@ name: ios-build
 # The IPA is meant to be signed afterwards by a sideloading service
 # (Signulous, SideStore, AltStore, ...) with the user's own certificate.
 # No Apple credentials are used or required here.
+#
+# Pushes to feature/harbor-ios run it. "Run workflow" (workflow_dispatch) only
+# appears once this file is on the fork's default branch.
 
 on:
   workflow_dispatch:
