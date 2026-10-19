@@ -1,6 +1,7 @@
 import { useSettings } from "@/lib/settings";
 import { startResize, useMaximized, type ResizeDir } from "@/lib/window";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
+import { hasDesktopWindow } from "@/lib/platform";
 
 const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
@@ -17,7 +18,7 @@ export function WindowResizeEdges() {
   const { settings } = useSettings();
   const fullscreen = useWindowFullscreen();
   const maximized = useMaximized();
-  if (!IS_TAURI || settings.useNativeTitleBar || fullscreen || maximized) return null;
+  if (!IS_TAURI || !hasDesktopWindow() || settings.useNativeTitleBar || fullscreen || maximized) return null;
   return (
     <div className="pointer-events-none fixed inset-0 z-[115]">
       {EDGES.map((e) => (

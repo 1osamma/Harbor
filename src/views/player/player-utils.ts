@@ -2,7 +2,7 @@ import { createHtml5Bridge } from "@/lib/player/html5";
 import { createMpvBridge, probeMpv, type MpvRect } from "@/lib/player/mpv";
 import type { PlayerBridge } from "@/lib/player/bridge";
 import type { MonitorInfo } from "@/lib/monitors";
-import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { isIos, isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 
 export const SYNC_DRIFT_TOLERANCE_S = 0.6;
 export const SYNC_SUPPRESS_MS = 1400;
@@ -34,14 +34,15 @@ export function embedFlags(
   videoWidth: number,
   videoHeight: number,
 ): { mpvEmbedWindowsActive: boolean; stageBg: string } {
-  const embedOn = engine === "mpv" && mpvEmbed;
+  const embedOn = engine === "mpv" && (mpvEmbed || isIos());
   const mpvEmbedWindowsActive = embedOn && isWindowsDesktop();
   const hasFrame = videoWidth > 0 && videoHeight > 0;
   const macShowing = embedOn && isMacDesktop() && hasFrame;
   const linuxShowing = embedOn && isLinuxDesktop() && hasFrame;
+  const iosShowing = embedOn && isIos() && hasFrame;
   return {
     mpvEmbedWindowsActive,
-    stageBg: mpvEmbedWindowsActive || macShowing || linuxShowing ? "" : "bg-black",
+    stageBg: mpvEmbedWindowsActive || macShowing || linuxShowing || iosShowing ? "" : "bg-black",
   };
 }
 

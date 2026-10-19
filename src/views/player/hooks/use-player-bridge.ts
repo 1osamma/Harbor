@@ -14,7 +14,7 @@ import { generalShaderKey, shaderCompanionOptions } from "@/lib/player/shader-ch
 import type { PlayerSrc } from "@/lib/view";
 import type { Settings } from "@/lib/settings";
 import { setPlaybackClock, setPlaybackStatus } from "@/lib/player/playback-clock";
-import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { isIos, isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { isLivePlaybackSrc } from "@/lib/player/live-src";
 import { readEmbedRect } from "@/lib/player/embed-rect";
 import { svpEnsureRunning, svpStatus } from "@/lib/svp";
@@ -64,7 +64,9 @@ export function usePlayerBridge(params: {
   const [autoFallbackTried, setAutoFallbackTried] = useState(false);
 
   const hdrOpaqueWindow = isWindowsDesktop() && settings.playerHdrOpaqueWindow;
-  const embedActive = settings.playerMpvEmbed && !hdrOpaqueWindow;
+  // iOS has no separate player window to fall back to: mpv always draws below
+  // the transparent webview there.
+  const embedActive = (settings.playerMpvEmbed || isIos()) && !hdrOpaqueWindow;
   const isAnimeSrc = metaIsAnime(src.meta) || !!src.isAnime;
   const anime4kWanted = settings.playerAnime4k && (!settings.playerAnime4kAnimeOnly || isAnimeSrc);
   // mpv only compiles a shader chain whose files it can open, and it drops the

@@ -1,7 +1,7 @@
 import { Search } from "@/components/icons/search-icon";
 import { useEffect, useRef, type ReactNode } from "react";
 import { close, minimize, toggleMaximize, useMaximized } from "@/lib/window";
-import { osClass } from "@/lib/platform";
+import { hasDesktopWindow, osClass } from "@/lib/platform";
 import { useWindowFullscreen } from "@/lib/use-window-fullscreen";
 import { useSearch } from "@/lib/search-context";
 import { useSettings } from "@/lib/settings";
@@ -13,7 +13,7 @@ const IS_TAURI = typeof window !== "undefined" && "__TAURI_INTERNALS__" in windo
 export function HybridTitleBar({ suppressed = false }: { suppressed?: boolean }) {
   const { settings } = useSettings();
   const fullscreen = useWindowFullscreen();
-  if (!IS_TAURI || settings.useNativeTitleBar || !settings.hybridTitleBar) return null;
+  if (!IS_TAURI || !hasDesktopWindow() || settings.useNativeTitleBar || !settings.hybridTitleBar) return null;
   if (suppressed || fullscreen) return null;
   const mac = osClass() === "macos";
   return (

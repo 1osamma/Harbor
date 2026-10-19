@@ -13,6 +13,9 @@
 // it does not get, and why, is listed in the handoff: no mpv, so no on-demand
 // native playback path (the webview plays it), and no ffmpeg sidecar, so no
 // thumbnails, transcode, DVR, subtitle extract, autosync or trailers.
+//
+// iOS uses this same builder. It differs from Android only in the mpv commands
+// from `mpv_ios.rs`, which put libmpv back for native playback.
 
 use crate::{
     crash_report, diagnostics, download, ebook_tts, fonts, gamepad, http_fetch, local_lib,
@@ -47,37 +50,13 @@ fn lan_ip() -> Option<String> {
     None
 }
 
-pub fn run() {
-    // librqbit speaks rustls, and rustls refuses to work until a process wide
-    // crypto provider is installed. Desktop does this too.
-    let _ = rustls::crypto::ring::default_provider().install_default();
-    std::thread::spawn(temp_prune::sweep_temp);
-
-    let proxy_state = tauri::async_runtime::block_on(stream_proxy::ProxyState::start())
-        .unwrap_or_else(|e| {
-            eprintln!("[stream-proxy] failed to start: {}", e);
-            stream_proxy::ProxyState::placeholder()
-        });
-
-    tauri::Builder::default()
-        .plugin(tauri_plugin_opener::Builder::new().open_js_links_on_click(false).build())
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_deep_link::init())
-        .manage(proxy_state)
-        .manage(download::DownloadState::new())
-        .setup(|app| {
-            if let Err(error) = crash_report::initialize(app.handle()) {
-                eprintln!("[harbor::crash-report] initialization failed: {error}");
-            }
-            torrent_engine::ensure_started_on_setup(app.handle());
-            gamepad::spawn(app.handle().clone());
-            Ok(())
-        })
-        .invoke_handler(tauri::generate_handler![
+// One command list for both mobile targets. iOS adds the mpv surface on top.
+// `generate_handler!` cannot take cfg attributes on its entries, so the extra
+// paths are spliced in as raw tokens instead of keeping two copies of the list.
+macro_rules! mobile_handler_with {
+    ($($extra:tt)*) => {
+        tauri::generate_handler![
+            $($extra)*
             lan_ip,
             crate::save_text_file,
             crate::harbor_take_pending_file,
@@ -144,7 +123,80 @@ pub fn run() {
             power::power_inhibit,
             stremio_auth::stremio_auth_start,
             transcode::cast_ffmpeg_present,
-        ])
+        ]
+    };
+}
+
+#[cfg(target_os = "ios")]
+macro_rules! mobile_handler {
+    () => {
+        mobile_handler_with!(
+            crate::mpv_ios::mpv_probe,
+            crate::mpv_ios::mpv_start,
+            crate::mpv_ios::mpv_command,
+            crate::mpv_ios::mpv_set_property,
+            crate::mpv_ios::mpv_get_property,
+            crate::mpv_ios::mpv_vo_passes,
+            crate::mpv_ios::mpv_audio_devices,
+            crate::mpv_ios::mpv_sub_add,
+            crate::mpv_ios::mpv_sub_remove,
+            crate::mpv_ios::mpv_set_geometry,
+            crate::mpv_ios::mpv_stop,
+            crate::mpv_ios::mpv_release_media,
+            crate::mpv_ios::mpv_restore_media_surface,
+            crate::mpv_ios::mpv_force_below,
+            crate::mpv_ios::mpv_on_pip_changed,
+            crate::mpv_ios::mpv_save_screenshot,
+            crate::mpv_ios::mpv_screenshot_data_url,
+            crate::anime4k::anime4k_dir,
+            crate::anime4k::anime4k_download,
+            crate::shaders::shader_dir,
+            crate::shaders::shader_download,
+            crate::streams::resolve_playback_redirect,
+        )
+    };
+}
+
+#[cfg(not(target_os = "ios"))]
+macro_rules! mobile_handler {
+    () => {
+        mobile_handler_with!()
+    };
+}
+
+pub fn run() {
+    // librqbit speaks rustls, and rustls refuses to work until a process wide
+    // crypto provider is installed. Desktop does this too.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    std::thread::spawn(temp_prune::sweep_temp);
+
+    let proxy_state = tauri::async_runtime::block_on(stream_proxy::ProxyState::start())
+        .unwrap_or_else(|e| {
+            eprintln!("[stream-proxy] failed to start: {}", e);
+            stream_proxy::ProxyState::placeholder()
+        });
+
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::Builder::new().open_js_links_on_click(false).build())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_deep_link::init())
+        .manage(proxy_state)
+        .manage(download::DownloadState::new())
+        .setup(|app| {
+            if let Err(error) = crash_report::initialize(app.handle()) {
+                eprintln!("[harbor::crash-report] initialization failed: {error}");
+            }
+            torrent_engine::ensure_started_on_setup(app.handle());
+            gamepad::spawn(app.handle().clone());
+            #[cfg(target_os = "ios")]
+            crate::mpv_ios::init(app.handle());
+            Ok(())
+        })
+        .invoke_handler(mobile_handler!())
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {

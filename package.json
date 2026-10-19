@@ -24,6 +24,9 @@
     "release:beta": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1",
     "release:stable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-beta.ps1 -Channel stable",
     "build:tv": "tsc -b && vite build --mode android",
+    "build:ios": "tsc -b && vite build --mode ios",
+    "ios:init": "tauri ios init",
+    "ios:build": "tauri ios build --no-sign",
     "android:init": "tauri android init",
     "android:dev": "tauri android dev",
     "android:build": "tauri android build --apk --target aarch64",
@@ -79,7 +82,7 @@
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4",
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.12.3",
     "@types/html-to-pdfmake": "2.4.5",
     "@types/pdfmake": "0.3.3",
     "@types/qrcode": "^1.5.6",

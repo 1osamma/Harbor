@@ -8,7 +8,7 @@ export function isWeb(): boolean {
   return typeof window !== "undefined" && !("__TAURI_INTERNALS__" in window);
 }
 
-export type OsClass = "linux" | "macos" | "windows" | "android" | "web";
+export type OsClass = "linux" | "macos" | "windows" | "android" | "ios" | "web";
 
 function detectOs(): OsClass {
   if (!isTauri()) return "web";
@@ -17,6 +17,7 @@ function detectOs(): OsClass {
   if (platform === "macos") return "macos";
   if (platform === "windows") return "windows";
   if (platform === "android") return "android";
+  if (platform === "ios") return "ios";
   return "web";
 }
 
@@ -46,6 +47,20 @@ export function isWindowsDesktop(): boolean {
 
 export function isAndroid(): boolean {
   return osClass() === "android";
+}
+
+/** The native iOS/iPadOS app. Not Safari on an iPhone, which reports "web". */
+export function isIos(): boolean {
+  return osClass() === "ios";
+}
+
+/**
+ * A Tauri build with a resizable, movable desktop window. Mobile builds run
+ * inside the webview too, but have no title bar, window buttons or edges.
+ */
+export function hasDesktopWindow(): boolean {
+  const os = osClass();
+  return os === "windows" || os === "macos" || os === "linux";
 }
 
 // Every other platform answers from plugin-os, which reports only "android" for

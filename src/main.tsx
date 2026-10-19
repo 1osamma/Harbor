@@ -6,6 +6,7 @@ import { hydrateCustomThemes } from "@/lib/custom-themes";
 import { getUiLanguage } from "@/lib/i18n/store";
 import { ensureUiLocale } from "@/lib/i18n/load-locale";
 import { applyOsDataset } from "@/lib/platform";
+import { initIosShell } from "@/lib/ios-shell";
 import { loadSecrets } from "@/lib/secret-store";
 import { initializeMusic } from "@/lib/music/player";
 import { initSubtitleCache } from "@/lib/subtitles/subtitle-cache";
@@ -107,6 +108,7 @@ if (isDjDeck) {
 }
 const isRemote = detectRemoteMode();
 applyOsDataset();
+initIosShell();
 if (isRemote) {
   document.documentElement.style.overflow = "auto";
   document.body.style.overflow = "auto";

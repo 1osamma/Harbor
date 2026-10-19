@@ -99,6 +99,8 @@ audit-rest.txt
 installer/src-tauri/payload/
 installer/payload-stage/
 !installer/**/*.md
+# iOS port tracking documents (feature/harbor-ios)
+!/IOS_*.md
 # local design references and perf captures, not for distribution
 tools/tv-refs/
 docs/tv-perf/

@@ -1,0 +1,207 @@
+name: ios-build
+
+# Builds Harbor for iOS on a macOS runner and uploads an UNSIGNED .ipa.
+# The IPA is meant to be signed afterwards by a sideloading service
+# (Signulous, SideStore, AltStore, ...) with the user's own certificate.
+# No Apple credentials are used or required here.
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulator:
+        description: Also build for the iOS Simulator and capture launch screenshots
+        type: boolean
+        default: true
+  push:
+    branches:
+      - feature/harbor-ios
+    paths-ignore:
+      - "**/*.md"
+      - docs/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=6144
+  # The extension compat layer is not part of this repository (see tauri-build.yml).
+  HARBOR_CAPSTAN_OPTIONAL: "1"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ipa:
+    name: iOS device build (unsigned IPA)
+    runs-on: macos-15
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri -> target
+          key: ios
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install xcodegen
+        run: command -v xcodegen || brew install xcodegen
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch bundled subtitle fonts
+        run: pnpm run setup:fonts
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Generate Xcode project
+        run: pnpm tauri ios init --ci
+
+      - name: Add native player layer and MPVKit
+        run: node scripts/ios/prepare-xcode.mjs
+
+      - name: Resolve Swift packages
+        working-directory: src-tauri/gen/apple
+        run: |
+          PROJ=$(ls -d *.xcodeproj | head -1)
+          xcodebuild -resolvePackageDependencies -project "$PROJ"
+
+      - name: Build unsigned IPA
+        run: pnpm tauri ios build --ci --no-sign --target aarch64
+
+      - name: Inspect IPA
+        id: ipa
+        run: |
+          IPA=$(find src-tauri/gen/apple/build -name '*.ipa' | head -1)
+          if [ -z "$IPA" ]; then echo "No IPA was produced"; exit 1; fi
+          echo "path=$IPA" >> "$GITHUB_OUTPUT"
+          ls -la "$IPA"
+          mkdir -p "$RUNNER_TEMP/ipa-check" && cd "$RUNNER_TEMP/ipa-check"
+          unzip -q "$GITHUB_WORKSPACE/$IPA"
+          APP=$(ls -d Payload/*.app | head -1)
+          echo "App bundle: $APP"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$APP/Info.plist"
+          BIN="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
+          lipo -info "$BIN"
+          # The player must actually be in the binary, not just compiled.
+          nm -gU "$BIN" | grep -E 'harbor_mpv_ios_register|harbor_mpv_swift_create|_mpv_create' || { echo "libmpv / bridge symbols missing"; exit 1; }
+          du -sh "$APP"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Harbor-iOS-unsigned-${{ github.sha }}
+          path: ${{ steps.ipa.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+  simulator:
+    name: iOS Simulator build + launch smoke test
+    if: github.event_name == 'push' || inputs.simulator
+    runs-on: macos-15
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+          xcodebuild -version
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri -> target
+          key: ios-sim
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install xcodegen
+        run: command -v xcodegen || brew install xcodegen
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch bundled subtitle fonts
+        run: pnpm run setup:fonts
+
+      - name: Generate Xcode project
+        run: |
+          pnpm tauri ios init --ci
+          node scripts/ios/prepare-xcode.mjs
+
+      - name: Build for simulator
+        run: pnpm tauri ios build --ci --debug --target aarch64-sim
+
+      - name: Boot simulator, install, launch, screenshot
+        run: |
+          APP=$(find src-tauri/gen/apple/build -name '*.app' -path '*sim*' | head -1)
+          [ -n "$APP" ] || APP=$(find src-tauri/gen/apple/build -name '*.app' | head -1)
+          echo "App: $APP"
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
+          mkdir -p "$RUNNER_TEMP/shots"
+          for DEVICE in "iPhone 16 Pro" "iPad Pro 13-inch (M4)"; do
+            UDID=$(xcrun simctl list devices available -j | node -e '
+              const d=JSON.parse(require("fs").readFileSync(0,"utf8")).devices;
+              const want=process.argv[1];
+              for (const k of Object.keys(d).filter(k=>k.includes("iOS")).sort().reverse())
+                for (const x of d[k]) if (x.name===want) { console.log(x.udid); process.exit(0); }
+            ' "$DEVICE")
+            if [ -z "$UDID" ]; then echo "no simulator named $DEVICE"; continue; fi
+            SAFE=$(echo "$DEVICE" | tr ' ()' '___')
+            xcrun simctl boot "$UDID" || true
+            xcrun simctl bootstatus "$UDID" -b
+            xcrun simctl install "$UDID" "$APP"
+            xcrun simctl launch "$UDID" "$BUNDLE_ID"
+            sleep 45
+            xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$SAFE-portrait.png"
+            # Still running after 45s means it did not crash on launch.
+            xcrun simctl spawn "$UDID" launchctl list | grep -i "$BUNDLE_ID" || { echo "::error::app is not running on $DEVICE"; }
+            xcrun simctl spawn "$UDID" log show --last 2m --predicate "process CONTAINS[c] 'Harbor'" --style compact > "$RUNNER_TEMP/shots/$SAFE.log" 2>&1 || true
+            xcrun simctl shutdown "$UDID" || true
+          done
+          ls -la "$RUNNER_TEMP/shots"
+
+      - name: Upload simulator screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Harbor-iOS-simulator-${{ github.sha }}
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: warn
+          retention-days: 14

@@ -6,7 +6,7 @@ import { markLimitReached } from "@/lib/subtitles/limit-signal";
 import { clearPendingSub, markPendingSub } from "@/lib/subtitles/pending-subs";
 import { registerTranslationJob } from "@/lib/subtitles/translation-jobs";
 import { mpvFailureSnapshot } from "./mpv-failure";
-import { isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { isIos, isLinuxDesktop, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import type { MonitorInfo } from "@/lib/monitors";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -1546,7 +1546,7 @@ export function createMpvBridge(mpvOptions?: MpvOptions): PlayerBridge {
             ["target-prim", "auto"],
             ["target-contrast", "auto"],
           ];
-      if (isWindowsDesktop() || isMacDesktop()) {
+      if (isWindowsDesktop() || isMacDesktop() || isIos()) {
         properties.push(["target-colorspace-hint", "yes"]);
       }
       for (const [name, value] of properties) {

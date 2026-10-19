@@ -50,7 +50,7 @@ mod web_server;
 // is a compile-time true and the compiler sees exactly the tree it saw before.
 #[cfg(desktop)]
 mod airplay;
-#[cfg(desktop)]
+#[cfg(any(desktop, target_os = "ios"))]
 mod anime4k;
 #[cfg(desktop)]
 mod app_icon;
@@ -120,7 +120,7 @@ mod pip_window;
 mod pip_mac;
 #[cfg(desktop)]
 mod roku;
-#[cfg(desktop)]
+#[cfg(any(desktop, target_os = "ios"))]
 mod shaders;
 #[cfg(desktop)]
 mod song_id;
@@ -158,6 +158,10 @@ mod mobile;
 // reclaims mid-stream, and 400 DHT qps that fills a home router's NAT table.
 #[cfg(target_os = "android")]
 mod p2p_android;
+// iOS playback: the desktop mpv command surface, backed by MPVKit's libmpv
+// through the Swift layer in src-tauri/ios. Android has no counterpart yet.
+#[cfg(target_os = "ios")]
+mod mpv_ios;
 
 #[cfg(desktop)]
 pub(crate) fn release_stremio_scheme(app: &tauri::AppHandle) {
