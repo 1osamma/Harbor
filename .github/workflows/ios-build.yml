@@ -78,7 +78,6 @@ jobs:
         # installed by the step below, so turn that check off for this runner.
         run: |
           pnpm config set --location=global verify-deps-before-run false
-          pnpm config set --location=global confirm-modules-purge false
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
@@ -173,7 +172,6 @@ jobs:
         # installed by the step below, so turn that check off for this runner.
         run: |
           pnpm config set --location=global verify-deps-before-run false
-          pnpm config set --location=global confirm-modules-purge false
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
