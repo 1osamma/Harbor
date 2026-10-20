@@ -58,6 +58,10 @@ static const HarborMpvVtable kHarborMpvVtable = {
   .version = harbor_mpv_swift_version,
 };
 
+// Defined in HarborWebViewInsets.swift: lets the page lay out edge to edge.
+extern void harbor_ios_install_webview_insets(void);
+
 __attribute__((constructor)) static void harbor_mpv_bootstrap(void) {
   harbor_mpv_ios_register(&kHarborMpvVtable);
+  harbor_ios_install_webview_insets();
 }

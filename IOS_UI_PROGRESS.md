@@ -74,9 +74,19 @@ Last updated: 2026-10-20 (Claude Code, UI session 1).
 
 | Run | Commit | Result |
 |---|---|---|
-| [39364609792](https://github.com/1osamma/Harbor/actions/runs/39364609792) | `ca9859db` | _pending at time of writing; see final section_ |
+| [39364609792](https://github.com/1osamma/Harbor/actions/runs/39364609792) | `ca9859db` | **Simulator: success** (installs, launches, alive after 45s on iPhone 16 Pro + iPad Pro 13"; screenshot shows the new full-screen onboarding sheet under the Dynamic Island). **Device: IPA built + uploaded** (`Harbor-iOS-unsigned-ca9859db…`, 173 MB); job marked failed only by the Inspect IPA FFmpeg marker (false negative: FFmpeg ships as `Frameworks/Libavformat.framework`, verified by downloading the IPA). Fixed in `9c1eacdd`. |
 
 ## Known issues / limitations
+
+- **Bottom black band (fix pending verification):** both simulator screenshots of run 39364609792
+  (and the earlier run 39352217482) show a black band below the page (~97pt iPhone, ~52pt iPad):
+  UIKit's automatic safe-area content inset on the WKWebView scroll view shrinks the page height.
+  `src-tauri/ios/Sources/HarborWebViewInsets.swift` (called from `HarborMpvBootstrap.c`) sets
+  `contentInsetAdjustmentBehavior = .never` once the webview exists. Confirm on the next run's
+  screenshots. `mpv_set_geometry` reads `adjustedContentInset`, which is now zero, consistent with
+  a page that starts at the screen origin.
+- `color-mix()` needs iOS 16.2+; on 16.0–16.1 the glass surfaces fall back to transparent
+  (Harbor's desktop CSS already relies on it).
 
 - One navigation stack (Harbor's `ViewProvider`), not one stack per tab like `UITabBarController`:
   switching tabs resets to that tab's root (desktop sidebar behaviour). Per-tab stacks would need
