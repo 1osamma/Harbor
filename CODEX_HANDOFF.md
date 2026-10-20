@@ -3,10 +3,30 @@
 Written 2026-10-20 at the end of Claude Code session 1. Read this file first, then
 `IOS_BUILD_LOG.md` (every CI attempt and its root cause) and `IOS_FEATURE_MATRIX.md`.
 
-> **Status in one line:** the iOS implementation is written, and the build has been fixed past
-> every error found so far. **No IPA has been produced yet. Nothing has run on a simulator or a
-> device.** No playback feature is verified. "Ported" in the docs means the code path exists, not
-> that it works.
+> **Current status:** an [unsigned IPA is uploaded](https://github.com/1osamma/Harbor/actions/runs/39352217482/artifacts/12236388185) (run 5, attempt 2).
+> Simulator job passed; screenshot contents remain unverified due to a download-host restriction.
+> Device build passed, but inspection failed on `libavformat license`; upload succeeded anyway.
+> CI debugging stopped at the owner's requested artifact-upload boundary. No playback verified.
+
+## 2026-10-20 — Continuation result (run 5, attempt 2)
+
+- **Downloadable unsigned IPA:** [Harbor-iOS-unsigned-00c8dfa3](https://github.com/1osamma/Harbor/actions/runs/39352217482/artifacts/12236388185).
+  `Harbor.ipa`: 173,005,084 bytes, arm64, bundle ID `app.harbor`, version 1.0.0, iOS 16.0+.
+  Artifact ZIP expires 2026-11-19. Built from `00c8dfa3`, whose application code and workflow
+  are identical to handoff HEAD `4a673fcc` (only documentation differs).
+- **Simulator job: SUCCESS.** Logs confirm installation, launch, and a live process after 45 s
+  on iPhone 16 Pro and iPad Pro 13-inch (M4). [Screenshots and logs](https://github.com/1osamma/Harbor/actions/runs/39352217482/artifacts/12236124928) uploaded.
+  Screenshot contents have **not been visually verified** in this continuation: the environment
+  blocks the connector download host (`sdmntprpolandcentral.oaiusercontent.com`, HTTP 403).
+  Do not yet claim the plugin error screen is gone or onboarding is visible.
+- **Device job: FAILURE at Inspect IPA; build and upload SUCCESS.** The Rust marker
+  `embedded libmpv (MPVKit)`, Swift marker `app.harbor.mpv.events`, and mpv marker
+  `mplayer2 projects` were found. The check failed on **`missing: libavformat license`**.
+  This establishes a missing inspection marker, not the underlying reason or absent FFmpeg.
+  `strings` also logged `failed to flush output` for the three successful `grep -q` checks.
+- Stopped CI debugging after successful IPA upload as explicitly requested by the owner.
+  No application/workflow changes or further CI runs. Both-jobs-green and visual startup
+  acceptance remain incomplete. Signing, real-device launch, and all playback remain untested.
 
 ---
 
@@ -208,7 +228,7 @@ IPA artifact: once the device job is green, look for an artifact named
      `libavformat license`) instead of `nm -gU`. "Upload IPA" now has
      `if: always() && steps.ipa.outputs.path != ''`.
 
-### Final state at handoff
+### Historical state at handoff (superseded by continuation result above)
 
 | | |
 |---|---|

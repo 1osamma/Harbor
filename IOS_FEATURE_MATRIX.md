@@ -17,7 +17,7 @@ device test). Compiling is not verification.
 
 | Feature | Status | Verified | Notes |
 |---|---|---|---|
-| Launch, splash, main shell | Partial | Simulator (run 39347877439): launches, renders inside the safe area, then shows the "Plugin window not initialized" error view. Fix in 00c8dfa3 not yet verified. | Desktop shell in WKWebView; boot waits only on caught promises. |
+| Launch, splash, main shell | Partial | Run 39352217482 attempt 2: simulator build/install/launch and live process after 45 s confirmed on iPhone + iPad. Screenshots uploaded but visual review blocked by download-host HTTP 403; removal of plugin error view remains unverified. | Desktop shell in WKWebView; boot waits only on caught promises. |
 | Navigation (sidebar/topbar/rail layouts) | Shared | – | Touch = pointer events; hover-only affordances may need tap equivalents. |
 | iPad layout | Ported | – | Native width (≥960 CSS px in landscape on all iPads; most in portrait). |
 | iPhone layout | Partial | – | Viewport widened to 960 CSS px and scaled. Readable in landscape; small in portrait. Compact layout not built. |

@@ -4,6 +4,18 @@ The CI builds an **unsigned** `.ipa`. iOS will not run unsigned apps, so you sig
 certificate through a sideloading service. No Apple credentials are stored in this repository or
 its workflows.
 
+## Current test build (2026-10-20)
+
+[Download Harbor-iOS-unsigned-00c8dfa3](https://github.com/1osamma/Harbor/actions/runs/39352217482/artifacts/12236388185) and extract `Harbor.ipa` from the artifact ZIP.
+GitHub sign-in may be required. Artifact expires 2026-11-19.
+The IPA is 173,005,084 bytes, arm64, `app.harbor`, version 1.0.0, iOS 16.0+.
+
+This artifact uploaded successfully despite a failed content-marker inspection
+(`libavformat license` was not found). Rust, Swift and mpv markers were found.
+Simulator build/install/launch passed, but screenshot contents have not been visually verified
+in this continuation. Real-device behavior and playback are untested. CI debugging stopped
+when the IPA uploaded, as requested.
+
 ## 1. Get the IPA
 
 1. Open your fork on GitHub → **Actions** → **ios-build**.
@@ -57,3 +69,23 @@ pnpm tauri ios build --no-sign --target aarch64      # unsigned IPA
 ```
 
 The IPA lands in `src-tauri/gen/apple/build/arm64/`.
+
+## 5. Real-device test checklist
+
+Record the device model, iOS version, build SHA (`00c8dfa3`), and pass/fail for each test.
+Do not send credentials or private stream URLs with reports.
+
+1. Launch Harbor and confirm home/onboarding appears without "Plugin window not initialized".
+   Complete onboarding; close and reopen the app to check settings persistence.
+2. Check navigation, safe areas, portrait/landscape rotation, and touch targets on your device.
+3. With known accessible test media, test MP4 and MKV H.264/HEVC using the native mpv engine.
+   Confirm picture and sound, pause/play, seeking, chapters, and resume after reopening.
+4. Switch audio tracks; test volume, playback speed, audio/subtitle delay, and next episode.
+5. Test embedded and external SRT/ASS subtitles, Arabic/RTL, styling, and custom fonts.
+6. Test rotation during playback, background/lock-screen audio, then foreground recovery.
+7. On supported hardware, separately test HDR/HEVC, AV1, and Anime4K; report heat or stutter.
+8. If needed, test addon installation, search, debrid, and LAN media-server access separately.
+   Test HTML5 PiP/AirPlay separately from mpv; native mpv PiP/video AirPlay is not implemented.
+
+For a failure, record the exact message, reproduction steps, media container/codecs, engine,
+and a screenshot. These are test requests, not claims that the features work.

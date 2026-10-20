@@ -52,7 +52,27 @@ output, Dolby Vision, AV1 performance, Anime4K performance, and audio track/rout
   still owed.
 - MoltenVK video output in the iOS **Simulator** may not render; judge playback on a device.
 
-## Open at handoff (2026-10-20)
+## 2026-10-20 — Continuation result (run 5, attempt 2)
+
+- **Downloadable unsigned IPA:** [Harbor-iOS-unsigned-00c8dfa3](https://github.com/1osamma/Harbor/actions/runs/39352217482/artifacts/12236388185).
+  `Harbor.ipa`: 173,005,084 bytes, arm64, bundle ID `app.harbor`, version 1.0.0, iOS 16.0+.
+  Artifact ZIP expires 2026-11-19. Built from `00c8dfa3`, whose application code and workflow
+  are identical to handoff HEAD `4a673fcc` (only documentation differs).
+- **Simulator job: SUCCESS.** Logs confirm installation, launch, and a live process after 45 s
+  on iPhone 16 Pro and iPad Pro 13-inch (M4). [Screenshots and logs](https://github.com/1osamma/Harbor/actions/runs/39352217482/artifacts/12236124928) uploaded.
+  Screenshot contents have **not been visually verified** in this continuation: the environment
+  blocks the connector download host (`sdmntprpolandcentral.oaiusercontent.com`, HTTP 403).
+  Do not yet claim the plugin error screen is gone or onboarding is visible.
+- **Device job: FAILURE at Inspect IPA; build and upload SUCCESS.** The Rust marker
+  `embedded libmpv (MPVKit)`, Swift marker `app.harbor.mpv.events`, and mpv marker
+  `mplayer2 projects` were found. The check failed on **`missing: libavformat license`**.
+  This establishes a missing inspection marker, not the underlying reason or absent FFmpeg.
+  `strings` also logged `failed to flush output` for the three successful `grep -q` checks.
+- Stopped CI debugging after successful IPA upload as explicitly requested by the owner.
+  No application/workflow changes or further CI runs. Both-jobs-green and visual startup
+  acceptance remain incomplete. Signing, real-device launch, and all playback remain untested.
+
+## Historical issues at handoff (2026-10-20; superseded above)
 
 - **No downloadable IPA yet.** The device build succeeds (run 39347877439: `Harbor.ipa`, 173 MB),
   but the old `nm -gU` inspection failed on the stripped binary before the upload step. The fix
