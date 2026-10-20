@@ -4,7 +4,7 @@ Tracks the touch-first iPhone/iPad UI work on `feature/harbor-ios` (fork `1osamm
 The native port itself (Rust/Swift/libmpv/CI) is tracked in `CODEX_HANDOFF.md`,
 `IOS_PROGRESS.md` and `IOS_BUILD_LOG.md`.
 
-Last updated: 2026-10-20 (Claude Code, UI session 1).
+Last updated: 2026-10-20 (Claude Code, UI session 1, after run 39367474752).
 
 ## Approach (read this first)
 
@@ -75,10 +75,12 @@ Last updated: 2026-10-20 (Claude Code, UI session 1).
 | Run | Commit | Result |
 |---|---|---|
 | [39364609792](https://github.com/1osamma/Harbor/actions/runs/39364609792) | `ca9859db` | **Simulator: success** (installs, launches, alive after 45s on iPhone 16 Pro + iPad Pro 13"; screenshot shows the new full-screen onboarding sheet under the Dynamic Island). **Device: IPA built + uploaded** (`Harbor-iOS-unsigned-ca9859db…`, 173 MB); job marked failed only by the Inspect IPA FFmpeg marker (false negative: FFmpeg ships as `Frameworks/Libavformat.framework`, verified by downloading the IPA). Fixed in `9c1eacdd`. |
+| [39367474752](https://github.com/1osamma/Harbor/actions/runs/39367474752) | `1e6a173f` | **Both jobs success (first fully green run).** Inspect IPA: Rust, Swift, mpv and FFmpeg markers found. Simulator screenshots: onboarding sheet fills the screen, bottom black band gone. **IPA:** [Harbor-iOS-unsigned-1e6a173f](https://github.com/1osamma/Harbor/actions/runs/39367474752/artifacts/12241017065) (173 MB, arm64, `app.harbor`, iOS 16+, expires 2026-11-19). |
 
 ## Known issues / limitations
 
-- **Bottom black band (fix pending verification):** both simulator screenshots of run 39364609792
+
+- **Bottom black band (FIXED, verified in run 39367474752 screenshots):** both simulator screenshots of run 39364609792
   (and the earlier run 39352217482) show a black band below the page (~97pt iPhone, ~52pt iPad):
   UIKit's automatic safe-area content inset on the WKWebView scroll view shrinks the page height.
   `src-tauri/ios/Sources/HarborWebViewInsets.swift` (called from `HarborMpvBootstrap.c`) sets
@@ -110,6 +112,7 @@ Last updated: 2026-10-20 (Claude Code, UI session 1).
 
 ## Next exact step
 
-Wait for (or re-run) `ios-build` on the latest commit, download
-`Harbor-iOS-simulator-<sha>` to confirm the onboarding sheet renders inside the safe area, then
-install `Harbor-iOS-unsigned-<sha>` on the iPhone (IOS_INSTALL.md) and walk the checklist above.
+Install `Harbor-iOS-unsigned-1e6a173f` on the iPhone (IOS_INSTALL.md, Signulous section), then
+walk: onboarding → Home hero swipe → open a series → episode list → Play with a stream addon →
+tap / double-tap gestures → rotate → Settings root + a page → Search tab → long-press a Continue
+Watching card. Record results in the Verified section above and in IOS_FEATURE_MATRIX.md.
