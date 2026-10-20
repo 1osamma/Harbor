@@ -50,15 +50,19 @@ Base: upstream `beta-branch` @ `cd2a0aff` (2026-10-18, Harbor 1.0.0 beta).
 - [~] Phase 2 — iOS foundation: config overlay, Info.plist, safe areas, chrome gating, viewport
 - [~] Phase 3 — native libmpv player through the existing bridge
 - [ ] Phase 4 — feature verification on simulator/device; iOS-specific fixes
-- [~] Phase 5 — IPA pipeline (workflow written; first run pending)
+- [~] Phase 5 — IPA pipeline (workflow runs; Xcode project generation, MPVKit resolution and all Rust dependencies build for iOS; Harbor crate fixes in progress — see IOS_BUILD_LOG.md)
 - [ ] Phase 6 — testing matrix filled with real results
 - [ ] Phase 7 — delivery docs (IOS_INSTALL.md written; artifact link pending)
 
 ## Next steps (in order)
 
-1. First CI run → fix Rust iOS compile errors, Swift compile errors, link errors.
+1. Finish CI: remaining Harbor-crate Rust errors, then Swift compile and link (see CODEX_HANDOFF.md §6).
 2. Simulator launch screenshots (iPhone + iPad) → fix boot/layout problems.
 3. Physical-device playback test by the user (MKV/HEVC/ASS/Arabic subtitles).
 4. Port further portable desktop commands to iOS (moviehash, subtitle sync, DLNA discovery).
 5. Compact iPhone layout.
 6. Native AVPictureInPicture for the mpv engine (needs sample-buffer rendering).
+
+## Handoff
+
+Development moves to OpenAI Codex after session 1. `CODEX_HANDOFF.md` is the starting point.

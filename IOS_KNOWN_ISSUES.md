@@ -38,3 +38,16 @@ output, Dolby Vision, AV1 performance, Anime4K performance, and audio track/rout
   LGPL requires that users can relink against a modified library; for a sideloaded,
   self-built IPA the source and build scripts in this repository satisfy that.
 - Harbor itself is MIT.
+
+## Build / tooling issues found so far
+
+- pnpm 11 re-verifies dependencies when Xcode's "Build Rust Code" phase runs `pnpm tauri`, then
+  aborts without a TTY. CI sets `verify-deps-before-run=false` globally. Local Mac builds need the
+  same (`pnpm config set --location=global verify-deps-before-run false`).
+- Upstream compiles `modal_overlay.rs` and `pip_window.rs` on every target, though they use
+  desktop-only Tauri window APIs. They are now `cfg(desktop)`. Upstream's Android build
+  presumably hits the same errors on `beta-branch`; that was not checked.
+- Desktop Rust has not been recompiled after the iOS changes (no Rust toolchain on the dev
+  machine). All changes are cfg-gated to be desktop-neutral, but a desktop `cargo check` is
+  still owed.
+- MoltenVK video output in the iOS **Simulator** may not render; judge playback on a device.

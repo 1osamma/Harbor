@@ -4,6 +4,7 @@ import { HarborMark } from "@/components/icons/harbor-mark";
 import { submitErrorReport } from "@/lib/bug-report";
 import { loadStartupCrashReport, startupCrashToHarborError } from "@/lib/startup-crash";
 import { isStaleTauriListenerError } from "@/lib/tauri-unlisten";
+import { hasDesktopWindow } from "@/lib/platform";
 import { t as translate, useT } from "@/lib/i18n";
 
 export type HarborError = {
@@ -19,6 +20,17 @@ export function showHarborError(error: HarborError): void {
 }
 
 const APP_VERSION = __APP_VERSION__;
+
+function isTauriRuntime(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+function isMissingDesktopCapability(m: string): boolean {
+  return (
+    (m.startsWith("plugin ") && m.endsWith(" not initialized")) ||
+    (m.startsWith("command ") && m.includes(" not found"))
+  );
+}
 
 function isNoisyError(reason: unknown, message?: string): boolean {
   const r = reason as { name?: string; message?: string } | undefined;
@@ -37,6 +49,10 @@ function isNoisyError(reason: unknown, message?: string): boolean {
   if (m.includes("request cancelled") || m.includes("request canceled")) return true;
   if (r?.name === "AbortError" || r?.name === "TimeoutError") return true;
   if (r?.name === "NetworkError") return true;
+  // Mobile builds have no desktop window plugin and register only part of the
+  // command set. The desktop shell calls those APIs fire-and-forget in many
+  // places; there the rejection is the expected answer, not an app failure.
+  if (!hasDesktopWindow() && isTauriRuntime() && isMissingDesktopCapability(m)) return true;
   return false;
 }
 

@@ -7,6 +7,9 @@ Status legend:
 - **Blocked** — cannot work on iOS today; blocker given.
 - **Not ported** — possible on iOS, not done yet.
 
+> **State at handoff (2026-10-20): no iOS build has completed yet, so every Verified cell is empty.**
+> Dependencies compile for iOS; the Harbor crate, Swift layer and link step are still being fixed.
+
 "Verified" is only filled in with what was actually observed (CI log, simulator screenshot,
 device test). Compiling is not verification.
 

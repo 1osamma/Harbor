@@ -120,10 +120,19 @@ jobs:
           BIN="$APP/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")"
           lipo -info "$BIN"
           # The player must actually be in the binary, not just compiled.
-          nm -gU "$BIN" | grep -E 'harbor_mpv_ios_register|harbor_mpv_swift_create|_mpv_create' || { echo "libmpv / bridge symbols missing"; exit 1; }
+          # Release executables are stripped of exported symbols, so `nm -gU` sees nothing.
+          # Look for strings each layer embeds instead: the Rust mpv_ios module, the Swift
+          # player, mpv itself and FFmpeg.
+          missing=0
+          for marker in 'embedded libmpv (MPVKit)' 'app.harbor.mpv.events' 'mplayer2 projects' 'libavformat license'; do
+            if strings -a "$BIN" | grep -qF "$marker"; then echo "found: $marker"; else echo "::error::missing: $marker"; missing=1; fi
+          done
+          [ "$missing" = 0 ] || { echo "libmpv / bridge code missing from the binary"; exit 1; }
+          ls "$APP/Frameworks" | head -50
           du -sh "$APP"
 
       - name: Upload IPA
+        if: always() && steps.ipa.outputs.path != ''
         uses: actions/upload-artifact@v4
         with:
           name: Harbor-iOS-unsigned-${{ github.sha }}
