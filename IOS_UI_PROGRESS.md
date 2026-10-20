@@ -116,3 +116,41 @@ Install `Harbor-iOS-unsigned-1e6a173f` on the iPhone (IOS_INSTALL.md, Signulous 
 walk: onboarding → Home hero swipe → open a series → episode list → Play with a stream addon →
 tap / double-tap gestures → rotate → Settings root + a page → Search tab → long-press a Continue
 Watching card. Record results in the Verified section above and in IOS_FEATURE_MATRIX.md.
+
+---
+
+## Session 2 (2026-10-20): real-device fixes. Commit `c3feb442`
+
+Owner tested the `1e6a173f` IPA on an iPhone and reported: stretched video strip in landscape,
+details page wider than the screen, Settings back button under the clock, desktop PiP settings.
+
+| Priority | Fix | Verified |
+|---|---|---|
+| 1 Video scaling | **Root cause:** `HarborVideoView.layoutSubviews` never updated `CAMetalLayer.drawableSize`; mpv's MoltenVK swapchain kept the portrait size and UIKit stretched it after rotation. drawableSize now tracks bounds × scale. `#root` drops notch insets while the player is open. Fit/Fill/Zoom/ratios via the aspect menu (always shown on iOS) + pinch out = fill, pinch in = fit. | Logic + Swift source test. **Device: pending.** |
+| 2 Player | Playback cluster centred; menus not dropped by width; menus as bottom sheet / side panel; cast hidden (no iOS backend); iPhone volume = hardware buttons. | Browser preview (HTML5 engine, VP9 test video): portrait + landscape layout, subtitles sheet. mpv path: device pending. |
+| 3 Auto-landscape | `HarborPresentation.swift`: requestGeometryUpdate(.landscape) on play (iPhone), restore on close, status bar + home indicator hidden, edge gestures deferred. `ios_player_presentation` command (vtable field `set_presentation`), plist VC-based status bar = true. | Device pending. |
+| 4 Branding | Official icon made full-bleed (source had opaque white corners) as single-size AppIcon; launch screen = web boot splash (boat on #0a0a0a). `src-tauri/ios/Brand`, installed by prepare-xcode.mjs. | CI build pending. |
+| 5 Overflow | LazyMount 48px bleed → iOS gutter (was +56px page width); Library tab strip scrolls in itself; hover edge arrows hidden. | Browser audit: Home, Discover, Library, movie + series details scrollWidth == 393. |
+| 6 Swipe-back | `src/chrome/ios-swipe-back.tsx` + `src/lib/ios-gestures.ts`. | Synthetic touch tests in preview: commits, cancels, ignores mid-screen / vertical / root. |
+| 7 Safe areas | Removed my earlier rule hiding empty drag-region strips (it hid Settings' safe-area spacer). Status bar scrim. Dev `&harbor-safe=59,34` fakes insets in the preview. | Audit with fake insets: nothing under the status bar on Home, Discover, Library, Search, Details, Settings root/page, Player. |
+| 8 Desktop settings | Hidden on iOS only: PiP style, title bar, window moving/tray, separate mpv window, casting, Discord, SVP, BP monitor, updater. | Preview: PiP group gone on iOS; desktop unchanged. |
+
+Tests: `tests/ios-mobile-ui.test.ts` (9 tests). `pnpm test`: 6052 pass / 106 fail, identical
+failure set to baseline. Typecheck passes. Desktop preview unchanged.
+
+CI: run [39376176469](https://github.com/1osamma/Harbor/actions/runs/39376176469) on `c3feb442`
+was **in progress at hand-off**. The simulator job now captures per-scene screenshots
+(`<device>-<n>-<scene>.png`: home, movie, series, long, settings, settings-page,
+player-portrait, player-landscape) via `HARBOR_SCREENSHOT` (`src/lib/ios-screenshot-scene.tsx`).
+
+### Next exact step
+1. Check run 39376176469. If the Swift/Rust build failed, read the simulator job log first
+   (new files: HarborPresentation.swift, vtable field `set_presentation`, `ios_screenshot_scene`).
+2. Inspect the scene screenshots, then hand `Harbor-iOS-unsigned-c3feb442…` to the owner.
+3. Device checks: landscape video fills correctly after rotation; auto-landscape on play and
+   restore on close; status bar/home indicator hidden in the player; launch screen and icon.
+
+### Known gaps
+- Settings search can still list rows that are hidden on iOS (it opens their page).
+- Native PiP with mpv still unimplemented (desktop PiP hidden on iOS).
+- Subtitle rendering path (DOM vs libass for ASS/Arabic) unchanged from session 1; device test needed.
