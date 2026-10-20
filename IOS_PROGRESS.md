@@ -26,3 +26,11 @@ Checked locally:
 Not yet checked:
 - Any Rust/Swift compile for iOS (needs the CI run).
 - Anything at runtime.
+
+### Session 1, later
+
+- GitHub: signed in as `1osamma`; fork created at https://github.com/1osamma/Harbor (none existed).
+  `origin` = fork, `upstream` = Harborofficial/Harbor with pushes disabled.
+- Actions enabled on the fork via the API. Branch `feature/harbor-ios` pushed.
+- `pnpm test` matches the upstream baseline exactly (6043 pass / 106 pre-existing failures).
+- First CI run: https://github.com/1osamma/Harbor/actions/runs/39344058176

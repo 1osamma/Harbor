@@ -71,6 +71,15 @@ jobs:
       - name: Install xcodegen
         run: command -v xcodegen || brew install xcodegen
 
+      - name: Configure pnpm for Xcode build phases
+        # Xcode runs `pnpm tauri ios xcode-script` with its own environment, where
+        # pnpm 11 re-verifies node_modules, decides to reinstall and aborts with
+        # ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY. Dependencies are already
+        # installed by the step below, so turn that check off for this runner.
+        run: |
+          pnpm config set --location=global verify-deps-before-run false
+          pnpm config set --location=global confirm-modules-purge false
+
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
 
@@ -156,6 +165,15 @@ jobs:
 
       - name: Install xcodegen
         run: command -v xcodegen || brew install xcodegen
+
+      - name: Configure pnpm for Xcode build phases
+        # Xcode runs `pnpm tauri ios xcode-script` with its own environment, where
+        # pnpm 11 re-verifies node_modules, decides to reinstall and aborts with
+        # ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY. Dependencies are already
+        # installed by the step below, so turn that check off for this runner.
+        run: |
+          pnpm config set --location=global verify-deps-before-run false
+          pnpm config set --location=global confirm-modules-purge false
 
       - name: Install JS deps
         run: pnpm install --frozen-lockfile
