@@ -87,17 +87,18 @@ html[data-mpv-embed="1"] #root {
 }
 
 /* iOS: the page is laid out under the status bar, notch and home indicator
-   (viewport-fit=cover). Keep the app inside the safe area by making #root the
-   containing block for its fixed-position descendants, which is every shell
-   layer Harbor draws, and inset it. The html background fills the margins. */
+   (viewport-fit=cover). #root is the containing block for every fixed shell
+   layer; it is inset only at the sides (landscape notch) so artwork can run
+   under the status bar and home indicator. Top and bottom insets are applied
+   per surface in styles/ios.css. */
 html[data-os="ios"] {
   background: var(--color-canvas, #111214);
 }
 html[data-os="ios"] #root {
   position: fixed;
-  top: env(safe-area-inset-top);
+  top: 0;
   right: env(safe-area-inset-right);
-  bottom: env(safe-area-inset-bottom);
+  bottom: 0;
   left: env(safe-area-inset-left);
   height: auto;
   contain: layout;

@@ -75,6 +75,7 @@ export function AnimeEpisodeRow({
       onContextMenu={(e) =>
         onContextMenu?.(e, animeSeasonKey(ep), ep.number, progress.watched, ep.sourceMetaId, ep.absoluteNumber)
       }
+      data-episode-row
       className="group flex gap-6 rounded-lg px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button

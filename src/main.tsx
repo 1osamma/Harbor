@@ -19,6 +19,7 @@ import { PipApp } from "@/views/pip";
 import { VideoPipApp } from "@/views/video-pip";
 import "@/lib/awards-history-eager";
 import "@/index.css";
+import "@/styles/ios.css";
 import "flag-icons/css/flag-icons.min.css";
 import { startTaskbarProgress } from "@/lib/download/taskbar-progress";
 import { completeBetaReturnPreferences } from "@/lib/updater/beta-return";

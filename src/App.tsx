@@ -55,7 +55,9 @@ import {
 import { synchronizeMediaServer } from "@/lib/media-server/sync";
 import { setNativeMemoryActive } from "@/lib/native-memory";
 import { useOverlayPinned } from "@/lib/overlay-pin";
-import { isMobileWeb, isRemoteRoute } from "@/lib/platform";
+import { isIos, isMobileWeb, isRemoteRoute } from "@/lib/platform";
+import { IosTabBar, useIosTabBarSpace } from "@/chrome/ios-tab-bar";
+import { IosBackButton } from "@/chrome/ios-back-button";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
@@ -129,7 +131,7 @@ import { WatchlistSync } from "@/lib/watchlist-sync";
 import { ContextMenuProvider } from "@/lib/context-menu";
 import { PageContextNavigationDialogs } from "@/chrome/context-page-navigation";
 import { TopRankModalProvider } from "@/lib/top-rank-modal";
-import { OnboardingProvider } from "@/lib/onboarding";
+import { OnboardingProvider, useOnboarding } from "@/lib/onboarding";
 import { RankingsProvider } from "@/lib/rankings";
 import { SettingsProvider } from "@/lib/settings";
 import { SearchProvider, useSearchActions, useSearchOpen } from "@/lib/search-context";
@@ -1614,6 +1616,12 @@ function Shell({ onReady }: { onReady?: () => void }) {
   const ebookAlive = useIdleEvict(ebookTop);
   const peopleAlive = useIdleEvict(peopleTop);
 
+  const iosChrome = isIos();
+  const { onboarded } = useOnboarding();
+  const iosTabBarHidden =
+    !onboarded || playerActive || pickerTop || immersive || bigPicture || chromeHidden;
+  useIosTabBarSpace(iosChrome && !iosTabBarHidden);
+
   const gameDockVisible =
     !kid && !kidsTop && !playerActive && !pickerTop && !bigPicture && !immersive && !chromeHidden;
   return (
@@ -1651,6 +1659,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
         className="relative flex h-full"
       >
         <div data-harbor-native-backdrop className="relative flex h-full min-w-0 flex-1">
+          {iosChrome && (
+            <>
+              <IosBackButton hidden={iosTabBarHidden} />
+              <IosTabBar hidden={iosTabBarHidden} />
+            </>
+          )}
+          {!iosChrome && (
+            <>
           {!settingsTop &&
             !playerActive &&
             !standaloneLive &&
@@ -1716,6 +1732,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
             <div className="fixed end-3 top-3 z-[120]">
               <WindowControls />
             </div>
+          )}
+            </>
           )}
           {installFeatures.music && <MusicDock />}
           <MusicSurprisePrompt />
@@ -2173,13 +2191,14 @@ function Shell({ onReady }: { onReady?: () => void }) {
                 <WindowControls />
               </div>
             )}
-            {!immersive && !settingsTop && (
+            {!immersive && !settingsTop && !iosChrome && (
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 top-0 z-30 h-24 bg-gradient-to-b from-canvas/85 via-canvas/40 to-transparent"
               />
             )}
             {!immersive &&
+              !iosChrome &&
               (themeHasTopbar || (settingsTop && layout !== "minui" && layout !== "custom")) && (
                 <Topbar />
               )}

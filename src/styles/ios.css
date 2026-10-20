@@ -1,0 +1,670 @@
+/*
+ * Harbor on iPhone and iPad.
+ *
+ * Every rule is scoped to html[data-os="ios"], which only the native iOS app
+ * sets (src/lib/platform.ts), so desktop, Android TV and the web remote are
+ * untouched. Form factor and orientation come from src/lib/ios-shell.ts:
+ *   html[data-ios-form="phone" | "tablet"]
+ *   html[data-ios-orientation="portrait" | "landscape"]
+ *   html[data-ios-tabbar]  while the floating tab bar is on screen
+ */
+
+html[data-os="ios"] {
+  --ios-safe-top: env(safe-area-inset-top, 0px);
+  --ios-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --ios-gutter: 20px;
+  --ios-tabbar-height: 64px;
+  --ios-tabbar-gap: max(8px, calc(var(--ios-safe-bottom) - 10px));
+  --ios-tabbar-space: 0px;
+  --ios-glass: color-mix(in srgb, var(--color-surface) 58%, transparent);
+  --ios-glass-strong: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  --ios-hairline: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  -webkit-text-size-adjust: 100%;
+}
+
+html[data-os="ios"][data-ios-form="tablet"] {
+  --ios-gutter: 32px;
+  --ios-tabbar-height: 66px;
+}
+
+html[data-os="ios"][data-ios-tabbar] {
+  --ios-tabbar-space: calc(var(--ios-tabbar-height) + var(--ios-tabbar-gap) + 20px);
+}
+
+html[data-os="ios"] body {
+  overscroll-behavior: none;
+}
+
+/* Momentum scrolling everywhere; WebKit needs no prefix since iOS 13 but
+   keeps rubber-banding off nested scrollers unless asked. */
+html[data-os="ios"] [data-harbor-shell] main,
+html[data-os="ios"] [data-harbor-shell] .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Page scrollers: the desktop pads 96px under its topbar. On iOS there is no
+   topbar, so pad to the status bar instead, and pad the bottom past the tab bar. */
+html[data-os="ios"] [data-harbor-shell] main.overflow-y-auto {
+  padding-top: calc(var(--ios-safe-top) + 16px) !important;
+  padding-bottom: calc(var(--ios-tabbar-space) + 24px) !important;
+}
+
+/* Touch scrolling shows WebKit's overlay indicator; no desktop scroll bars. */
+html[data-os="ios"] [data-harbor-shell] *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+html[data-os="ios"] [data-harbor-shell] * {
+  scrollbar-width: none;
+}
+
+/* Horizontal rows scroll by touch. */
+html[data-os="ios"] .overflow-x-auto,
+html[data-os="ios"] .overflow-x-scroll {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+html[data-os="ios"] .overflow-x-auto::-webkit-scrollbar,
+html[data-os="ios"] .overflow-x-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Desktop-only affordances that mean nothing on a touch screen. */
+html[data-os="ios"] [data-tauri-drag-region]:empty,
+html[data-os="ios"] .harbor-bp-proxy,
+html[data-os="ios"] [data-big-picture-entry] {
+  display: none !important;
+}
+
+/* ---------------------------------------------------------------- tab bar */
+
+.ios-tabbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 95;
+  display: flex;
+  justify-content: center;
+  padding: 0 max(12px, env(safe-area-inset-right)) var(--ios-tabbar-gap)
+    max(12px, env(safe-area-inset-left));
+  pointer-events: none;
+  transition:
+    transform 380ms var(--ease-out),
+    opacity 240ms ease;
+}
+.ios-tabbar[data-hidden] {
+  transform: translate3d(0, calc(100% + 24px), 0);
+  opacity: 0;
+}
+.ios-tabbar::before {
+  /* Fades content into the bar so the glass reads against bright artwork. */
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: calc(var(--ios-tabbar-height) + var(--ios-tabbar-gap) + 36px);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-canvas) 78%, transparent),
+    transparent
+  );
+  pointer-events: none;
+}
+.ios-tabbar-track {
+  position: relative;
+  pointer-events: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  width: min(100%, 460px);
+  height: var(--ios-tabbar-height);
+  padding: 5px;
+  border-radius: calc(var(--ios-tabbar-height) / 2);
+  background: var(--ios-glass);
+  border: 0.5px solid var(--ios-hairline);
+  box-shadow:
+    0 18px 40px -12px rgb(0 0 0 / 0.6),
+    inset 0 0.5px 0 color-mix(in srgb, white 14%, transparent);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+}
+html[data-ios-form="tablet"] .ios-tabbar-track {
+  width: min(100%, 560px);
+}
+.ios-tab {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: calc((var(--ios-tabbar-height) - 10px) / 2);
+  color: color-mix(in srgb, var(--color-ink) 62%, transparent);
+  transition:
+    color 200ms ease,
+    background-color 260ms var(--ease-out);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+.ios-tab[data-active] {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+.ios-tab-icon {
+  display: inline-flex;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ios-tab:active .ios-tab-icon {
+  transform: scale(0.86);
+}
+.ios-tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+.ios-tab-avatar {
+  display: inline-flex;
+  border-radius: 999px;
+  transform: scale(0.86);
+  transition: box-shadow 200ms ease;
+}
+.ios-tab-avatar.is-active {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+html[data-ios-orientation="landscape"][data-ios-form="phone"] .ios-tab-label {
+  display: none;
+}
+html[data-ios-orientation="landscape"][data-ios-form="phone"] {
+  --ios-tabbar-height: 52px;
+}
+
+/* ------------------------------------------------------------ back button */
+
+.ios-back-button {
+  position: fixed;
+  top: calc(var(--ios-safe-top) + 6px);
+  inset-inline-start: max(14px, env(safe-area-inset-left));
+  z-index: 80;
+  display: inline-flex;
+  height: 44px;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--color-ink);
+  background: var(--ios-glass-strong);
+  border: 0.5px solid var(--ios-hairline);
+  box-shadow: 0 8px 24px -10px rgb(0 0 0 / 0.6);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  transition: transform 160ms ease;
+}
+.ios-back-button:active {
+  transform: scale(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ios-tabbar,
+  .ios-tab,
+  .ios-tab-icon,
+  .ios-back-button {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------- onboarding */
+
+/* On a phone the setup card becomes a full-screen sheet: the body scrolls,
+   the step footer sits above the home indicator. */
+html[data-os="ios"][data-ios-form="phone"] [data-onboarding-overlay] {
+  align-items: stretch;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-onboarding-card] {
+  width: 100% !important;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-onboarding-card] > button[aria-label] {
+  top: calc(var(--ios-safe-top) + 8px);
+}
+html[data-os="ios"][data-ios-form="phone"] [data-onboarding-body] {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  justify-content: flex-start;
+  padding: calc(var(--ios-safe-top) + 52px) 22px 20px !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-onboarding-footer] {
+  padding: 14px 18px calc(var(--ios-safe-bottom) + 12px);
+}
+
+/* ------------------------------------------------------------------- home */
+
+html[data-os="ios"] [data-harbor-shell] main[data-home-main] {
+  padding-inline: var(--ios-gutter) !important;
+  padding-top: 0 !important;
+}
+html[data-os="ios"] [data-home-main] > * > [data-context-page-background] {
+  gap: 30px;
+}
+html[data-os="ios"][data-ios-form="tablet"] [data-home-main] > * > [data-context-page-background] {
+  gap: 40px;
+}
+
+/* The hero runs edge to edge and under the status bar. */
+html[data-os="ios"] [data-home-main] [data-scroll-anchor="hero"] {
+  margin: 0 calc(-1 * var(--ios-gutter)) 0 !important;
+}
+
+/* The TMDB nudge is a card in the flow, not a banner over the artwork. */
+html[data-os="ios"] [data-home-nudge] {
+  position: relative !important;
+  order: 1;
+}
+html[data-os="ios"] [data-home-nudge]:not(:has(button)) {
+  display: none;
+}
+html[data-os="ios"] [data-home-main] [data-scroll-anchor="hero"] {
+  order: 0;
+}
+html[data-os="ios"] [data-home-main] [data-context-page-background] > :not([data-scroll-anchor="hero"]):not([data-home-nudge]) {
+  order: 2;
+}
+
+/* Row customisation is a pointer-and-keyboard tool; Settings > Layout keeps it. */
+html[data-os="ios"][data-ios-form="phone"] [data-home-customize] {
+  display: none;
+}
+
+/* Seasonal invitations sit under the hero instead of over its corner. */
+html[data-os="ios"] [data-hero-overlay-slot] {
+  position: relative !important;
+  inset: auto !important;
+  width: auto !important;
+  margin: 22px var(--ios-gutter) 0;
+  justify-content: stretch !important;
+}
+html[data-os="ios"] [data-hero-overlay-slot] > * {
+  width: 100%;
+}
+
+/* ------------------------------------------------------------------- hero */
+
+html[data-os="ios"] [data-hero-carousel] {
+  position: relative;
+  gap: 0 !important;
+}
+html[data-os="ios"] [data-hero-carousel] > [dir="ltr"] {
+  border-radius: 0 !important;
+}
+html[data-os="ios"] [data-hero-chevron],
+html[data-os="ios"] .harbor-hero-stage .harbor-awards-corner {
+  display: none !important;
+}
+html[data-os="ios"] .harbor-hero-stage {
+  height: min(76svh, 640px) !important;
+  min-height: 520px !important;
+  border-radius: 0 !important;
+}
+html[data-os="ios"][data-ios-form="tablet"] .harbor-hero-stage {
+  height: min(68svh, 760px) !important;
+}
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] .harbor-hero-stage {
+  height: 100svh !important;
+  min-height: 0 !important;
+}
+html[data-os="ios"] [data-hero-backdrop] {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+  object-position: center 22%;
+}
+html[data-os="ios"] [data-hero-shade-side] {
+  display: none;
+}
+html[data-os="ios"][data-ios-form="tablet"][data-ios-orientation="landscape"] [data-hero-shade-side] {
+  display: block;
+  opacity: 0.7 !important;
+}
+html[data-os="ios"] [data-hero-shade-bottom] {
+  height: 72% !important;
+  background: linear-gradient(
+    to top,
+    var(--color-canvas) 0%,
+    color-mix(in srgb, var(--color-canvas) 82%, transparent) 30%,
+    color-mix(in srgb, var(--color-canvas) 30%, transparent) 62%,
+    transparent 100%
+  ) !important;
+}
+html[data-os="ios"] .harbor-hero-stage::after {
+  /* Keeps the status bar legible over bright artwork. */
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--ios-safe-top) + 48px);
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.45), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+html[data-os="ios"] [data-hero-body] {
+  padding: 0 var(--ios-gutter) 54px !important;
+  justify-content: flex-end !important;
+  align-items: center;
+  z-index: 2;
+}
+html[data-os="ios"] [data-hero-copy] {
+  display: flex;
+  width: 100%;
+  max-width: 560px !important;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+html[data-os="ios"][data-ios-form="tablet"][data-ios-orientation="landscape"] [data-hero-body] {
+  align-items: flex-start;
+  padding-inline: 48px !important;
+}
+html[data-os="ios"][data-ios-form="tablet"][data-ios-orientation="landscape"] [data-hero-copy] {
+  align-items: flex-start;
+  text-align: start;
+}
+html[data-os="ios"] [data-hero-rank] {
+  margin-bottom: 14px !important;
+  align-self: center !important;
+}
+html[data-os="ios"] [data-hero-rank] > div:first-child {
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--color-canvas) 62%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+html[data-os="ios"] [data-hero-rank] > div + div {
+  display: none;
+}
+html[data-os="ios"] [data-hero-title] {
+  min-height: 0 !important;
+  justify-content: center;
+}
+html[data-os="ios"] [data-hero-title] img {
+  max-height: 104px !important;
+  max-width: min(78vw, 420px) !important;
+  object-position: center !important;
+}
+html[data-os="ios"] [data-hero-title] h2 {
+  font-size: clamp(34px, 10vw, 54px) !important;
+  text-wrap: balance;
+}
+html[data-os="ios"] [data-hero-desc] {
+  margin-top: 14px !important;
+  font-size: 14.5px !important;
+  line-height: 1.45 !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+  color: color-mix(in srgb, var(--color-ink) 78%, transparent) !important;
+}
+html[data-os="ios"] [data-hero-stats] {
+  margin-top: 12px !important;
+  justify-content: center;
+  column-gap: 16px !important;
+  font-size: 13.5px !important;
+}
+html[data-os="ios"] [data-hero-actions] {
+  margin-top: 20px !important;
+  width: 100%;
+  justify-content: center;
+  gap: 12px !important;
+}
+html[data-os="ios"] [data-hero-actions] > button {
+  height: 50px !important;
+  border-radius: 999px !important;
+  font-size: 16px !important;
+}
+html[data-os="ios"] [data-hero-actions] > [data-hero-primary] {
+  flex: 0 1 190px;
+  justify-content: center;
+  box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.6);
+}
+html[data-os="ios"] [data-hero-actions] > button:not([data-hero-primary]) {
+  flex: 0 1 auto;
+  padding-inline: 20px !important;
+  background: color-mix(in srgb, var(--color-ink) 14%, transparent) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  white-space: nowrap;
+}
+html[data-os="ios"] [data-hero-actions] > button:active {
+  transform: scale(0.96);
+}
+html[data-os="ios"] [data-hero-dots] {
+  position: absolute !important;
+  inset-inline: 0;
+  bottom: 22px;
+  z-index: 5;
+  gap: 6px !important;
+  padding: 0 !important;
+  pointer-events: none;
+}
+html[data-os="ios"] [data-hero-dots] > button {
+  height: 5px !important;
+  width: 5px !important;
+  pointer-events: auto;
+  background: color-mix(in srgb, var(--color-ink) 38%, transparent) !important;
+}
+html[data-os="ios"] [data-hero-dots] > button[class*="w-12"] {
+  width: 22px !important;
+  background: var(--color-ink) !important;
+}
+
+/* ------------------------------------------------------------------- rows */
+
+/* Rows line up with the page gutter but scroll out to the screen edge.
+   The gap must match GAP in components/row.tsx, which sizes the cards. */
+html[data-os="ios"] .harbor-row-shell {
+  padding-inline-start: 0 !important;
+  gap: 12px !important;
+}
+html[data-os="ios"] .harbor-row-track {
+  margin-inline: calc(-1 * var(--ios-gutter)) !important;
+  padding-inline: var(--ios-gutter) !important;
+  scroll-padding-inline: var(--ios-gutter) !important;
+}
+html[data-os="ios"][data-ios-form="phone"] .harbor-row-track {
+  gap: 12px !important;
+}
+html[data-os="ios"] .harbor-row-shell h3 {
+  font-size: 20px !important;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+html[data-os="ios"][data-ios-form="tablet"] .harbor-row-shell h3 {
+  font-size: 22px !important;
+}
+/* Hover-only row arrows; touch scrolls. */
+html[data-os="ios"] .harbor-row-shell .group\/row > button,
+html[data-os="ios"] .harbor-row-shell [data-row-arrow] {
+  display: none !important;
+}
+
+/* Sections that render nothing still took a flex gap. */
+html[data-os="ios"] [data-home-main] [data-scroll-anchor]:not(:has(*)) {
+  display: none;
+}
+
+/* TMDB nudge: stack the copy above the actions on a phone. */
+html[data-os="ios"][data-ios-form="phone"] [data-home-nudge] .animate-nudge-in {
+  flex-wrap: wrap;
+  row-gap: 12px;
+  padding: 16px;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-home-nudge] .animate-nudge-in > .min-w-0 {
+  flex-basis: calc(100% - 56px);
+}
+
+/* ---------------------------------------------------------------- details */
+
+html[data-os="ios"] [data-harbor-shell] main[data-detail-main] {
+  padding-top: 0 !important;
+}
+html[data-os="ios"] [data-detail-hero] {
+  height: min(74svh, 640px) !important;
+  min-height: 500px !important;
+}
+html[data-os="ios"][data-ios-form="tablet"] [data-detail-hero] {
+  height: min(70svh, 780px) !important;
+}
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [data-detail-hero] {
+  height: 100svh !important;
+  min-height: 0 !important;
+}
+html[data-os="ios"] [data-detail-hero]::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--ios-safe-top) + 64px);
+  background: linear-gradient(to bottom, rgb(0 0 0 / 0.5), transparent);
+  pointer-events: none;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-shade-side] {
+  display: none;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-shade-bottom] {
+  background: linear-gradient(
+    to top,
+    var(--color-canvas) 0%,
+    color-mix(in srgb, var(--color-canvas) 80%, transparent) 32%,
+    color-mix(in srgb, var(--color-canvas) 20%, transparent) 64%,
+    transparent 100%
+  ) !important;
+}
+html[data-os="ios"] [data-detail-hero-copy] {
+  padding: 0 var(--ios-gutter) 26px !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-hero-copy] > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-hero-copy] > div > p:first-child {
+  margin-bottom: 10px !important;
+  font-size: 11.5px !important;
+  letter-spacing: 0.16em !important;
+}
+html[data-os="ios"] [data-detail-title] {
+  min-height: 84px !important;
+  width: 100%;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-title] > img {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%);
+  max-height: 96px !important;
+  max-width: min(80vw, 380px) !important;
+  object-position: center bottom !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-title] > h1 {
+  font-size: clamp(34px, 10.5vw, 52px) !important;
+  text-wrap: balance;
+}
+html[data-os="ios"][data-ios-form="tablet"] [data-detail-title] > h1 {
+  font-size: 64px !important;
+}
+html[data-os="ios"] [data-detail-pills] {
+  margin-top: 14px !important;
+  gap: 8px !important;
+  padding-inline-end: 0 !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-pills] {
+  justify-content: center;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-pills] + div {
+  /* The awards corner moves into the synopsis on a phone. */
+  display: none;
+}
+html[data-os="ios"] [data-detail-actions] {
+  margin-top: 20px !important;
+  gap: 10px !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-detail-actions] {
+  margin-inline: auto;
+  justify-content: center;
+}
+html[data-os="ios"] [data-detail-actions] button {
+  min-height: 48px;
+}
+html[data-os="ios"] [data-detail-body] {
+  padding: 26px var(--ios-gutter) 24px !important;
+  gap: 34px !important;
+}
+html[data-os="ios"][data-ios-form="tablet"] [data-detail-body] {
+  gap: 44px !important;
+}
+html[data-os="ios"] [data-detail-body] h2 {
+  letter-spacing: -0.01em;
+}
+/* Rearranging detail sections is a desktop editor; iPad keeps it. */
+html[data-os="ios"][data-ios-form="phone"] .detail-layout-toolbar {
+  display: none !important;
+}
+
+/* The first-play tip anchors to Play; keep it on screen and left-aligned. */
+html[data-os="ios"][data-ios-form="phone"] [data-play-mode-hint] {
+  width: min(280px, calc(100vw - 2 * var(--ios-gutter))) !important;
+  text-align: start;
+}
+
+/* --------------------------------------------------------------- episodes */
+
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] {
+  gap: 4px !important;
+  padding: 10px 0 !important;
+  border-radius: 14px;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] > button:first-of-type {
+  gap: 12px !important;
+  align-items: flex-start;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] > button > div:first-child {
+  width: 44% !important;
+  max-width: 180px;
+  border-radius: 10px !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] h4 {
+  font-size: 14.5px !important;
+  white-space: normal;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] h4 > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] p {
+  font-size: 12px !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] .line-clamp-2 {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-episode-row] > :last-child button {
+  height: 36px;
+  width: 36px;
+}

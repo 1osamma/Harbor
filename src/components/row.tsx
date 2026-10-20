@@ -20,8 +20,15 @@ import { useView } from "@/lib/view";
 import { resetPosterDock as resetPosterDockItems, updatePosterDock } from "@/lib/poster-dock";
 import { scrollDeltaToRevealCard } from "@/lib/poster-backdrop-expansion";
 import { RowCardExpansionProvider } from "@/components/row-card-expansion";
+import { iosFormFactor } from "@/lib/ios-shell";
+import { isIos } from "@/lib/platform";
 
-const GAP = 20;
+// iOS rows size cards so a fraction of the next one shows past the edge, the touch cue that a
+// row scrolls; iPhone also tightens the gap and shrinks the minimum card to fit its narrow screen.
+const IOS_PHONE = isIos() && iosFormFactor() === "phone";
+const GAP = IOS_PHONE ? 12 : 20;
+const MIN_SCALE = IOS_PHONE ? 0.74 : 1;
+const PEEK = !isIos() ? 0 : IOS_PHONE ? 0.6 : 0.4;
 
 function columnSpan(value?: string): number {
   const span = value?.match(/span\s+(\d+)/)?.[1];
@@ -263,7 +270,10 @@ export function Row({
   const tvCards =
     shape === "portrait" && settings.rowCardStyle === "tv" && holdsPosterCards(children);
   const effShape: RowShape = tvCards ? "landscape" : shape;
-  const effMin = Math.max(72, Math.round((tvCards ? TV_CARD_MIN : min) * settings.posterScale));
+  const effMin = Math.max(
+    72,
+    Math.round((tvCards ? TV_CARD_MIN : min) * settings.posterScale * MIN_SCALE),
+  );
   const expandingCards = effShape === "portrait" && settings.posterBackdropExpansion;
   const dockEnabled = effShape === "portrait" && settings.posterDockMagnification;
   const posterHeightRatio = effShape === "landscape" ? 9 / 16 : effShape === "square" ? 1 : 1.5;
@@ -307,8 +317,10 @@ export function Row({
     const previous = measuredRef.current;
     if (Math.abs(available - previous.width) < 0.5 && effMin === previous.effMin) return;
     measuredRef.current = { width: available, effMin };
-    const fits = Math.max(1, Math.floor((available + GAP) / (effMin + GAP)));
-    const raw = (available - (fits - 1) * GAP) / fits;
+    const fits = Math.max(1, Math.floor((available + GAP) / (effMin + GAP) - PEEK));
+    const raw = PEEK
+      ? (available - fits * GAP) / (fits + PEEK)
+      : (available - (fits - 1) * GAP) / fits;
     const next = (Math.ceil(raw * 64) + 1) / 64;
     batchWrite(() => setCellWidth(next));
   };

@@ -240,6 +240,7 @@ export function HeroCarousel({
 
   return (
     <div
+      data-hero-carousel
       className={full ? "relative" : "flex flex-col gap-5"}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -311,6 +312,7 @@ export function HeroCarousel({
               type="button"
               tabIndex={-1}
               data-tv-skip="true"
+              data-hero-chevron
               onClick={() => setActive((a) => (a - 1 + slides.length) % slides.length)}
               aria-label={t("Previous")}
               className="group/hl absolute inset-y-0 start-0 z-30 my-auto flex h-14 w-14 items-center justify-center"
@@ -325,6 +327,7 @@ export function HeroCarousel({
               type="button"
               tabIndex={-1}
               data-tv-skip="true"
+              data-hero-chevron
               onClick={() => setActive((a) => (a + 1) % slides.length)}
               aria-label={t("Next")}
               className="group/hr absolute inset-y-0 end-0 z-30 my-auto flex h-14 w-14 items-center justify-center"
@@ -340,6 +343,7 @@ export function HeroCarousel({
       </div>
       {slides.length > 1 && (
         <div
+          data-hero-dots
           className={`flex justify-center gap-2.5 ${full ? "absolute bottom-4 inset-x-0" : "pt-1"}`}
         >
           {slides.map((_, i) => (

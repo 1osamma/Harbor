@@ -291,6 +291,7 @@ export const Hero = memo(function Hero({
     >
       {bg && loadBackdrop && (
         <img
+          data-hero-backdrop
           src={bg}
           alt=""
           decoding="async"
@@ -331,18 +332,22 @@ export const Hero = memo(function Hero({
         </button>
       )}
       <div
+        data-hero-shade-side
         className="absolute inset-0 bg-gradient-to-r from-canvas via-canvas/85 via-50% to-transparent rtl:bg-gradient-to-l"
         style={{ opacity: settings.heroShadow / 100 }}
       />
-      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-canvas via-canvas/70 via-50% to-transparent" />
+      <div
+        data-hero-shade-bottom
+        className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-canvas via-canvas/70 via-50% to-transparent" />
       <MetaAwardsCorner meta={meta} imdbId={resolvedImdb} />
 
       <div
+        data-hero-body
         className={`harbor-hero-content relative flex h-full flex-col p-14 ${bottomAlign ? "justify-end pb-24" : "justify-center"} ${full ? "pt-28 lg:pt-32" : ""}`}
       >
-        <div className="max-w-2xl">
+        <div data-hero-copy className="max-w-2xl">
           {rank && (
-            <div className="group/rank relative mb-5 inline-flex self-start">
+            <div data-hero-rank className="group/rank relative mb-5 inline-flex self-start">
               <div className="inline-flex cursor-help items-center gap-1.5 rounded-md bg-canvas/85 px-2.5 py-1 text-[12px] font-semibold text-ink">
                 <TrendingUp size={12} className="text-accent" />
                 <span>
@@ -396,11 +401,14 @@ export const Hero = memo(function Hero({
             }}
           />
           {description && (
-            <p className="mt-6 line-clamp-3 max-w-xl text-[16px] leading-relaxed text-ink-muted">
+            <p data-hero-desc className="mt-6 line-clamp-3 max-w-xl text-[16px] leading-relaxed text-ink-muted">
               {description}
             </p>
           )}
-          <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[14px]">
+          <div
+            data-hero-stats
+            className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[14px]"
+          >
             {meta.releaseInfo && <Stat label={t("Year")} value={meta.releaseInfo} />}
             {settings.showImdbBadge && imdbRating && (
               <span className="flex items-center gap-2">
@@ -417,6 +425,7 @@ export const Hero = memo(function Hero({
             {meta.runtime && <Stat label={t("Runtime")} value={meta.runtime} />}
           </div>
           <div
+            data-hero-actions
             className="mt-9 flex gap-3"
             onMouseEnter={() => setOverControls(true)}
             onMouseLeave={() => setOverControls(false)}
@@ -426,6 +435,7 @@ export const Hero = memo(function Hero({
                 e.stopPropagation();
                 openMeta({ ...meta, logo: logo ?? meta.logo });
               }}
+              data-hero-primary
               className={`flex h-12 items-center gap-2.5 ${actionRadius} bg-ink px-7 text-[15px] font-semibold text-canvas transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98]`}
             >
               <Play size={18} fill="currentColor" />
@@ -490,7 +500,7 @@ function HeroTitlePlate({
   onError: () => void;
 }) {
   return (
-    <div className="relative flex min-h-[112px] items-end">
+    <div data-hero-title className="relative flex min-h-[112px] items-end">
       {logo ? (
         <img
           ref={(el) => {

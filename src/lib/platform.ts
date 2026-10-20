@@ -10,7 +10,20 @@ export function isWeb(): boolean {
 
 export type OsClass = "linux" | "macos" | "windows" | "android" | "ios" | "web";
 
+// Dev-only: `?harbor-os=ios` renders the iOS shell in a desktop browser, so the
+// phone layout can be iterated on without a Mac. Stripped from production builds.
+function devOsOverride(): OsClass | null {
+  if (!import.meta.env.DEV || typeof window === "undefined") return null;
+  try {
+    return new URLSearchParams(window.location.search).get("harbor-os") === "ios" ? "ios" : null;
+  } catch {
+    return null;
+  }
+}
+
 function detectOs(): OsClass {
+  const forced = devOsOverride();
+  if (forced) return forced;
   if (!isTauri()) return "web";
   const platform = nativePlatform();
   if (platform === "linux") return "linux";
@@ -134,7 +147,7 @@ export function isMobileWeb(): boolean {
   } catch {
     /* ignore */
   }
-  mobileWebCache = forcedOn || (isWeb() && isMobileDevice());
+  mobileWebCache = forcedOn || (isWeb() && !isIos() && isMobileDevice());
   return mobileWebCache;
 }
 

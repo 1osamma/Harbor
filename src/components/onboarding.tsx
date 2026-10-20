@@ -16,6 +16,7 @@ import type { Meta } from "@/lib/cinemeta";
 import { setVote } from "@/lib/feed/preferences";
 import { useT } from "@/lib/i18n";
 import { useOnboarding } from "@/lib/onboarding";
+import { isIos } from "@/lib/platform";
 
 type StepId =
   | "splash"
@@ -28,7 +29,7 @@ type StepId =
   | "subtitles"
   | "taste"
   | "done";
-const STEPS: StepId[] = [
+const ALL_STEPS: StepId[] = [
   "splash",
   "language",
   "welcome",
@@ -40,6 +41,8 @@ const STEPS: StepId[] = [
   "taste",
   "done",
 ];
+// iOS always uses its own touch chrome, so the desktop layout picker has nothing to choose.
+const STEPS: StepId[] = isIos() ? ALL_STEPS.filter((s) => s !== "layout") : ALL_STEPS;
 
 export function OnboardingModal() {
   const { onboarded, finishOnboarding } = useOnboarding();
@@ -86,11 +89,13 @@ export function OnboardingModal() {
 
   return (
     <div
+      data-onboarding-overlay
       className={`fixed inset-0 z-50 flex items-center justify-center bg-canvas/85 backdrop-blur-md ${
         closing ? "opacity-0 transition-opacity duration-300" : "animate-fade-in"
       }`}
     >
       <div
+        data-onboarding-card
         className={`relative flex flex-col overflow-hidden rounded-2xl border border-edge-soft bg-elevated/95 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.6)] ${
           isTaste ? "w-[min(93vw,640px)]" : "w-[min(92vw,580px)]"
         } transition-[width] duration-300 ${closing ? "scale-[0.97] opacity-0 !transition-all !duration-300" : "animate-modal-in"}`}
@@ -110,6 +115,7 @@ export function OnboardingModal() {
         ) : (
           <>
             <div
+              data-onboarding-body
               className={`flex min-h-[440px] flex-col ${isTaste ? "px-8 pt-9 pb-3" : "justify-center px-12 py-10"}`}
             >
               <div key={step} className="animate-step-in">
@@ -125,7 +131,10 @@ export function OnboardingModal() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-edge-soft bg-canvas/40 px-8 py-5">
+            <div
+              data-onboarding-footer
+              className="flex items-center justify-between border-t border-edge-soft bg-canvas/40 px-8 py-5"
+            >
               <Dots
                 count={STEPS.length - 1}
                 active={Math.max(stepIdx - 1, 0)}

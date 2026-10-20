@@ -320,6 +320,7 @@ export function CinemetaEpisodeRow({
     <div
       data-no-card-ring
       onContextMenu={onContextMenu ? (e) => onContextMenu(e, season, epNumber, watched) : undefined}
+      data-episode-row
       className="group flex items-center gap-4 rounded-lg px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button

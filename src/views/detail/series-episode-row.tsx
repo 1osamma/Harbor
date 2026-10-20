@@ -85,6 +85,7 @@ export function EpisodeRow({
       style={{ contentVisibility: "auto", containIntrinsicSize: "auto 160px" }}
       onContextMenu={(e) => onContextMenu?.(e, ep.seasonNumber, ep.episodeNumber, progress.watched)}
       onMouseEnter={() => prefetchSegments(meta, playEpisode)}
+      data-episode-row
       className="group flex gap-6 rounded-lg px-4 py-5 transition-colors hover:bg-elevated/30"
     >
       <button
