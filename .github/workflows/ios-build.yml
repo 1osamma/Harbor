@@ -124,9 +124,16 @@ jobs:
           # Look for strings each layer embeds instead: the Rust mpv_ios module, the Swift
           # player, mpv itself and FFmpeg.
           missing=0
-          for marker in 'embedded libmpv (MPVKit)' 'app.harbor.mpv.events' 'mplayer2 projects' 'libavformat license'; do
+          for marker in 'embedded libmpv (MPVKit)' 'app.harbor.mpv.events' 'mplayer2 projects'; do
             if strings -a "$BIN" | grep -qF "$marker"; then echo "found: $marker"; else echo "::error::missing: $marker"; missing=1; fi
           done
+          # MPVKit links libmpv into the executable but ships FFmpeg as embedded frameworks
+          # (Libavformat.framework …), so FFmpeg is looked for in either place.
+          if strings -a "$BIN" | grep -qF 'libavformat license' || ls "$APP/Frameworks" 2>/dev/null | grep -qi 'avformat'; then
+            echo "found: FFmpeg libavformat"
+          else
+            echo "::error::missing: FFmpeg libavformat (neither in the binary nor in Frameworks/)"; missing=1
+          fi
           [ "$missing" = 0 ] || { echo "libmpv / bridge code missing from the binary"; exit 1; }
           ls "$APP/Frameworks" | head -50
           du -sh "$APP"
