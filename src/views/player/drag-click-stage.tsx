@@ -6,10 +6,21 @@ const DOUBLE_TAP_SLOP = 40;
 const TOUCH_SEEK_SEC = 10;
 const SEEK_ZONE = 0.36;
 
+const PINCH_FILL = 1.18;
+const PINCH_FIT = 0.85;
+
 type TouchActions = {
   onSeekStep: (delta: number) => void;
   hideChrome: () => void;
+  /** Pinch out fills the screen (crops), pinch in fits it back: the iOS video convention. */
+  onCropMode?: (id: string) => void;
 };
+
+function touchDistance(touches: React.TouchList): number {
+  const a = touches[0];
+  const b = touches[1];
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
 
 export function DragClickStage(props: {
   drawMode: boolean;
@@ -98,6 +109,7 @@ function TouchStage({
   const chromeWasVisible = useRef(false);
   const [flash, setFlash] = useState<SeekFlash | null>(null);
   const flashTimer = useRef(0);
+  const pinch = useRef<{ start: number; ratio: number } | null>(null);
 
   const showFlash = (side: SeekFlash["side"]) => {
     window.clearTimeout(flashTimer.current);
@@ -113,6 +125,24 @@ function TouchStage({
     <div
       data-player-click-stage
       className="pointer-events-auto absolute inset-0 z-[3] touch-manipulation"
+      onTouchStart={(e) => {
+        if (e.touches.length === 2 && actions.onCropMode && !drawMode && !pipMode) {
+          pinch.current = { start: touchDistance(e.touches), ratio: 1 };
+          window.clearTimeout(singleTimer.current);
+          lastTap.current = null;
+        }
+      }}
+      onTouchMove={(e) => {
+        if (!pinch.current || e.touches.length < 2) return;
+        pinch.current.ratio = touchDistance(e.touches) / Math.max(1, pinch.current.start);
+      }}
+      onTouchEnd={(e) => {
+        const p = pinch.current;
+        if (!p || e.touches.length > 0) return;
+        pinch.current = null;
+        if (p.ratio > PINCH_FILL) actions.onCropMode?.("fill");
+        else if (p.ratio < PINCH_FIT) actions.onCropMode?.("fit");
+      }}
       onPointerDown={(e) => {
         // Read before this touch wakes the controls, so the tap can toggle them.
         chromeWasVisible.current = document.documentElement.hasAttribute(

@@ -4,6 +4,7 @@ import { Section, Segmented } from "../shared";
 import { TrayRow } from "../tray-row";
 import { DownloadsSection } from "../player-panel";
 import { DesktopOnlyBlock, isTauri } from "../player-panel/internals";
+import { isIos } from "@/lib/platform";
 
 type GfxBackend = "auto" | "d3d11" | "opengl" | "vulkan" | "software";
 
@@ -30,7 +31,7 @@ export function SystemTab() {
         )}
       </Section>
 
-      {isTauri && (
+      {isTauri && !isIos() && (
         <Section
           title={t("Window behavior")}
           subtitle={t(

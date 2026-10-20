@@ -1,6 +1,6 @@
 import { useT } from "@/lib/i18n";
 import { ExperimentalChangelog } from "@/components/update/experimental-changelog";
-import { isLinuxDesktop } from "@/lib/platform";
+import { isIos, isLinuxDesktop } from "@/lib/platform";
 import { Section } from "./shared";
 import { BetaChannelRow, ModifyInstallationRow, UpdatesRow } from "./advanced-panel";
 import { RollbackRow } from "./rollback-row";
@@ -15,7 +15,8 @@ const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window
 
 export function UpdatesPanel() {
   const t = useT();
-  const supportsInAppUpdates = isTauri && !isLinuxDesktop();
+  // iOS installs come from the sideloading service; the app cannot replace itself.
+  const supportsInAppUpdates = isTauri && !isLinuxDesktop() && !isIos();
   const experimentalInstalled = readBetaReturnContext(__APP_VERSION__) !== null;
   const experimentalAccess = useExperimentalAccess();
 

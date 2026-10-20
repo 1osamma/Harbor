@@ -148,6 +148,8 @@ macro_rules! mobile_handler {
             crate::mpv_ios::mpv_on_pip_changed,
             crate::mpv_ios::mpv_save_screenshot,
             crate::mpv_ios::mpv_screenshot_data_url,
+            crate::mpv_ios::ios_player_presentation,
+            crate::mpv_ios::ios_screenshot_scene,
             crate::anime4k::anime4k_dir,
             crate::anime4k::anime4k_download,
             crate::shaders::shader_dir,

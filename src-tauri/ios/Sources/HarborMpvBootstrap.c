@@ -23,6 +23,7 @@ typedef struct HarborMpvVtable {
   void (*free_string)(char *ptr);
   const char *(*error_string)(int32_t code);
   char *(*version)(void);
+  void (*set_presentation)(bool active);
 } HarborMpvVtable;
 
 extern int32_t harbor_mpv_swift_create(void);
@@ -38,6 +39,7 @@ extern void harbor_mpv_swift_set_visible(bool visible);
 extern void harbor_mpv_swift_free_string(char *ptr);
 extern const char *harbor_mpv_swift_error_string(int32_t code);
 extern char *harbor_mpv_swift_version(void);
+extern void harbor_mpv_swift_set_presentation(bool active);
 
 // Defined in the Rust static library (mpv_ios.rs).
 extern void harbor_mpv_ios_register(const HarborMpvVtable *vtable);
@@ -56,12 +58,16 @@ static const HarborMpvVtable kHarborMpvVtable = {
   .free_string = harbor_mpv_swift_free_string,
   .error_string = harbor_mpv_swift_error_string,
   .version = harbor_mpv_swift_version,
+  .set_presentation = harbor_mpv_swift_set_presentation,
 };
 
 // Defined in HarborWebViewInsets.swift: lets the page lay out edge to edge.
 extern void harbor_ios_install_webview_insets(void);
+// Defined in HarborPresentation.swift: fullscreen video presentation hooks.
+extern void harbor_ios_install_presentation(void);
 
 __attribute__((constructor)) static void harbor_mpv_bootstrap(void) {
   harbor_mpv_ios_register(&kHarborMpvVtable);
   harbor_ios_install_webview_insets();
+  harbor_ios_install_presentation();
 }

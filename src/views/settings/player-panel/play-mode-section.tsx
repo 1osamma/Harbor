@@ -1,6 +1,6 @@
 import { Timer } from "../icons";
 import { useSettings } from "@/lib/settings";
-import { isAndroid } from "@/lib/platform";
+import { isAndroid, isIos } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 import { STALL_WAIT_OPTIONS, stallWaitSec } from "@/lib/player/stall-wait";
 import { SettingGroup, SettingRow } from "../kit";
@@ -49,6 +49,8 @@ export function PlayModePanel() {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Both styles move or resize desktop windows; iOS has neither. */}
+      {!isIos() && (
       <SettingGroup label={t("Picture in picture")}>
         <SettingRow
           label={t("Picture in picture style")}
@@ -66,6 +68,7 @@ export function PlayModePanel() {
           />
         </SettingRow>
       </SettingGroup>
+      )}
       <SettingGroup label={t("Playback")}>
         <SettingRow
           label={t("Where Play looks first")}

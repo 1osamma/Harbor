@@ -58,6 +58,8 @@ import { useOverlayPinned } from "@/lib/overlay-pin";
 import { isIos, isMobileWeb, isRemoteRoute } from "@/lib/platform";
 import { IosTabBar, useIosTabBarSpace } from "@/chrome/ios-tab-bar";
 import { IosBackButton } from "@/chrome/ios-back-button";
+import { IosSwipeBack } from "@/chrome/ios-swipe-back";
+import { IosScreenshotScene, screenshotSceneKeepsPortrait } from "@/lib/ios-screenshot-scene";
 import { makeSafeTauriUnlisten } from "@/lib/tauri-unlisten";
 import { activeLayout } from "@/lib/theme";
 import { useThemePreview } from "@/lib/theme-preview";
@@ -1425,6 +1427,18 @@ function Shell({ onReady }: { onReady?: () => void }) {
 
   const playerActive = !!player && !player.sportsDocked && !player.pipDocked;
   useEffect(() => setNativeMemoryActive(playerActive), [playerActive]);
+  // iOS: landscape, no status bar and an auto-hiding home indicator while the full player is up.
+  useEffect(() => {
+    if (!isIos()) return;
+    document.documentElement.toggleAttribute("data-ios-player", playerActive);
+    void import("@tauri-apps/api/core")
+      .then(({ invoke }) =>
+        invoke("ios_player_presentation", {
+          active: playerActive && !screenshotSceneKeepsPortrait(),
+        }),
+      )
+      .catch(() => {});
+  }, [playerActive]);
   useEffect(() => {
     if (!playerActive) void exitWindowFullscreenOnPlayerClose();
   }, [playerActive]);
@@ -1662,6 +1676,8 @@ function Shell({ onReady }: { onReady?: () => void }) {
           {iosChrome && (
             <>
               <IosBackButton hidden={iosTabBarHidden} />
+              <IosSwipeBack disabled={iosTabBarHidden} />
+              <IosScreenshotScene />
               <IosTabBar hidden={iosTabBarHidden} />
             </>
           )}

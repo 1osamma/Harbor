@@ -72,8 +72,8 @@ html[data-os="ios"] .overflow-x-scroll::-webkit-scrollbar {
   display: none;
 }
 
-/* Desktop-only affordances that mean nothing on a touch screen. */
-html[data-os="ios"] [data-tauri-drag-region]:empty,
+/* Desktop-only affordances that mean nothing on a touch screen. (Empty
+   drag-region strips are NOT hidden: some double as safe-area spacers.) */
 html[data-os="ios"] .harbor-bp-proxy,
 html[data-os="ios"] [data-big-picture-entry] {
   display: none !important;
@@ -131,7 +131,7 @@ html[data-os="ios"] [data-big-picture-entry] {
   -webkit-backdrop-filter: blur(28px) saturate(170%);
   backdrop-filter: blur(28px) saturate(170%);
 }
-html[data-ios-form="tablet"] .ios-tabbar-track {
+html[data-os="ios"][data-ios-form="tablet"] .ios-tabbar-track {
   width: min(100%, 560px);
 }
 .ios-tab {
@@ -185,10 +185,10 @@ html[data-ios-form="tablet"] .ios-tabbar-track {
 .ios-tab-avatar.is-active {
   box-shadow: 0 0 0 2px var(--color-accent);
 }
-html[data-ios-orientation="landscape"][data-ios-form="phone"] .ios-tab-label {
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] .ios-tab-label {
   display: none;
 }
-html[data-ios-orientation="landscape"][data-ios-form="phone"] {
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] {
   --ios-tabbar-height: 52px;
 }
 
@@ -876,6 +876,19 @@ html[data-os="ios"] .hset-heading {
   }
 }
 
+/* The full player uses the whole screen in landscape: #root normally stays
+   clear of the notch at the sides, which would narrow the video stage (a 21:9
+   film would shrink). The chrome below keeps its own distance from the notch. */
+html[data-os="ios"][data-ios-player] #root {
+  left: 0;
+  right: 0;
+}
+html[data-os="ios"] [data-transport-top],
+html[data-os="ios"] [data-transport-bottom] {
+  padding-left: max(16px, env(safe-area-inset-left)) !important;
+  padding-right: max(16px, env(safe-area-inset-right)) !important;
+}
+
 /* Player chrome clears the status bar and the home indicator; the video
    itself stays full screen underneath. */
 html[data-os="ios"] [data-transport-top] {
@@ -941,4 +954,115 @@ html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [da
 }
 html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [data-hero-dots] {
   bottom: calc(var(--ios-tabbar-height) + var(--ios-tabbar-gap) + 6px);
+}
+
+/* Touch player layout. Previous / -10s / play / +10s / next sit in the middle
+   of the screen (fixed to #root, which the player fills); the bottom row keeps
+   the seek bar and the menus. */
+html[data-os="ios"] [data-transport-center] {
+  position: fixed;
+  inset-inline: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  justify-content: center;
+  gap: clamp(20px, 7vw, 56px) !important;
+  pointer-events: none;
+}
+html[data-os="ios"] [data-transport-center] > * {
+  pointer-events: auto;
+}
+html[data-os="ios"] [data-transport-center] button {
+  min-width: 52px;
+  min-height: 52px;
+  filter: drop-shadow(0 2px 10px rgb(0 0 0 / 0.55));
+}
+html[data-os="ios"] [data-transport-menus] {
+  gap: 2px !important;
+}
+html[data-os="ios"] [data-transport-bottom] > .grid {
+  grid-template-columns: auto 1fr auto !important;
+}
+
+/* Player menus (audio, subtitles, speed, aspect, chapters, Anime4K, shaders):
+   a bottom sheet in portrait, a side panel in landscape. */
+html[data-os="ios"][data-ios-player] .fixed.animate-menu-pop {
+  inset: auto max(8px, env(safe-area-inset-right)) calc(var(--ios-safe-bottom) + 8px)
+    max(8px, env(safe-area-inset-left)) !important;
+  width: auto !important;
+  max-width: none !important;
+  max-height: min(72svh, 560px) !important;
+  border-radius: 20px !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+html[data-os="ios"][data-ios-player][data-ios-orientation="landscape"] .fixed.animate-menu-pop {
+  inset: 8px max(8px, env(safe-area-inset-right)) 8px auto !important;
+  width: min(380px, 52vw) !important;
+  height: auto !important;
+  max-height: none !important;
+}
+/* Hover tooltips stick after a tap on touch screens (WebKit keeps :hover). */
+html[data-os="ios"] [data-transport-top] [role="tooltip"],
+html[data-os="ios"] [data-transport-bottom] [role="tooltip"] {
+  display: none !important;
+}
+/* Thumb-sized playback cluster. */
+html[data-os="ios"] [data-transport-center] svg {
+  width: 34px;
+  height: 34px;
+}
+html[data-os="ios"] [data-transport-center] button.h-16 svg {
+  width: 44px;
+  height: 44px;
+}
+
+/* --------------------------------------------------------------- overflow */
+
+/* LazyMount bleeds each culled section 48px past its column (padding plus a
+   negative margin) so content-visibility does not clip card shadows. 48px is
+   the desktop page gutter; on iOS the gutter is narrower, and the extra bleed
+   made every detail/home page 56px wider than the screen (sideways drag, text
+   cut at the edges). Bleed exactly to the screen edge instead. */
+html[data-os="ios"] .harbor-lazy-cull {
+  padding-left: var(--ios-gutter) !important;
+  padding-right: var(--ios-gutter) !important;
+  margin-left: calc(-1 * var(--ios-gutter)) !important;
+  margin-right: calc(-1 * var(--ios-gutter)) !important;
+}
+/* Library's section tabs scroll sideways inside their own strip. */
+html[data-os="ios"] [data-library-tabs] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  margin-inline: calc(-1 * var(--ios-gutter));
+  padding-inline: var(--ios-gutter);
+}
+html[data-os="ios"] [data-library-tabs] > * {
+  flex-shrink: 0;
+}
+/* Hover-only edge arrows on rows/rails: invisible on touch, but they sat over
+   the first and last 64px of every row and swallowed taps on the cards. */
+html[data-os="ios"] button.group\/edge {
+  display: none !important;
+}
+
+/* Status bar scrim: content scrolling up passes under a soft blurred band
+   instead of colliding with the clock and battery, as under a UIKit bar. */
+html[data-os="ios"] #root::after {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: var(--ios-safe-top);
+  z-index: 75;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-canvas) 88%, transparent),
+    color-mix(in srgb, var(--color-canvas) 55%, transparent)
+  );
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+html[data-os="ios"][data-ios-player] #root::after {
+  content: none;
 }

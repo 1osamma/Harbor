@@ -114,6 +114,16 @@ export function initIosShell(): void {
   if (!isIos() || typeof document === "undefined") return;
   const root = document.documentElement;
   root.dataset.iosForm = iosFormFactor();
+  // Dev preview only: `&harbor-safe=59,34` fakes an iPhone's top/bottom safe-area insets, since a
+  // desktop browser reports env(safe-area-inset-*) as 0.
+  const fake = import.meta.env.DEV
+    ? new URLSearchParams(window.location.search).get("harbor-safe")
+    : null;
+  if (fake) {
+    const [top, bottom] = fake.split(",").map(Number);
+    if (Number.isFinite(top)) root.style.setProperty("--ios-safe-top", `${top}px`);
+    if (Number.isFinite(bottom)) root.style.setProperty("--ios-safe-bottom", `${bottom}px`);
+  }
   applyViewport();
   applyOrientation();
   window.matchMedia("(orientation: landscape)").addEventListener("change", applyOrientation);

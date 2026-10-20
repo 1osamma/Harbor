@@ -64,6 +64,16 @@ final class HarborVideoView: UIView {
     CATransaction.begin()
     CATransaction.setDisableActions(true)
     metalLayer.frame = bounds
+    // mpv's MoltenVK context sizes its swapchain from drawableSize, and a
+    // CAMetalLayer does not update drawableSize when its frame changes. Left
+    // alone, a rotation kept the portrait-sized picture and UIKit stretched it
+    // into the landscape layer: a squashed, wide strip. Keep it at the layer's
+    // real pixel size so mpv letterboxes against the true shape (keepaspect).
+    let scale = metalLayer.contentsScale
+    let pixels = CGSize(
+      width: (bounds.width * scale).rounded(),
+      height: (bounds.height * scale).rounded())
+    if metalLayer.drawableSize != pixels { metalLayer.drawableSize = pixels }
     CATransaction.commit()
   }
 }

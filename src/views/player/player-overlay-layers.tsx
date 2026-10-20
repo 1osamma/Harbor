@@ -254,7 +254,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         onClick={p.playPauseToggle}
         onDoubleClick={p.toggleFullscreen}
         onWheelVolume={p.onVolumeWheel}
-        touch={{ onSeekStep: p.onSeekStep, hideChrome: p.hideChrome }}
+        touch={{ onSeekStep: p.onSeekStep, hideChrome: p.hideChrome, onCropMode: p.onCropMode }}
       />
 
       {p.tenFoot ? (

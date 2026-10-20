@@ -5,6 +5,7 @@ import {
 } from "./player-chrome-profiles";
 import { DEFAULT_PLAYER_ICONS } from "./default-player-icons";
 import { isIos } from "./platform";
+import { iosFormFactor } from "./ios-shell";
 
 export type PlayerSlot =
   | "top-left"
@@ -351,15 +352,27 @@ const IOS_UNAVAILABLE = new Set<PlayerControlId>([
   "rtx-hdr-toggle",
   "rtx-vsr-toggle",
   "pip",
+  // Chromecast/DLNA discovery is a desktop-only Rust module (no cast_* commands on iOS).
+  "cast",
 ]);
+// iPhone volume is the hardware buttons: mpv stays at 100% into the system mixer.
+const IOS_PHONE_UNAVAILABLE = new Set<PlayerControlId>(["volume"]);
+// Aspect/fill is a core phone control (fill the screen or not); always offered on iOS.
+const IOS_ALWAYS_SHOWN = new Set<PlayerControlId>(["aspect-menu"]);
 
 export function controlsInSlot(
   config: PlayerChromeConfig,
   slot: PlayerSlot,
 ): PlayerControlConfig[] {
   const ios = isIos();
+  const phone = ios && iosFormFactor() === "phone";
   return config.controls
-    .filter((c) => c.slot === slot && !c.hidden && !(ios && IOS_UNAVAILABLE.has(c.id)))
+    .filter((c) => {
+      if (c.slot !== slot) return false;
+      if (ios && (IOS_UNAVAILABLE.has(c.id) || (phone && IOS_PHONE_UNAVAILABLE.has(c.id))))
+        return false;
+      return !c.hidden || (ios && IOS_ALWAYS_SHOWN.has(c.id));
+    })
     .slice()
     .sort((a, b) => a.order - b.order);
 }

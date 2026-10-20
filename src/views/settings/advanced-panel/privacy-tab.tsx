@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n";
 import { ROW_DESC, Section, ToggleRow } from "../shared";
 import { PrivacyRow } from "../privacy-row";
 import { isTauri } from "../player-panel/internals";
+import { isIos } from "@/lib/platform";
 
 export function PrivacyTab() {
   const t = useT();
@@ -18,7 +19,8 @@ export function PrivacyTab() {
         <PrivacyRow />
       </Section>
 
-      {isTauri && (
+      {/* Discord RPC talks to the desktop Discord client over a local socket. */}
+      {isTauri && !isIos() && (
         <Section
           title={t("Discord Rich Presence")}
           subtitle={t(

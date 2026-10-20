@@ -1,4 +1,5 @@
 import { useSettings } from "@/lib/settings";
+import { isIos } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 import { Section, Segmented, ToggleRow } from "./shared";
 import { SettingRow } from "./kit";
@@ -28,7 +29,7 @@ export function BigPicturePanel() {
           value={settings.bigPictureAutoStart}
           onChange={(v) => update({ bigPictureAutoStart: v })}
         />
-        {settings.bigPictureAutoStart && (
+        {settings.bigPictureAutoStart && !isIos() && (
           <DisplayPickerRow
             label={t("Big Picture display")}
             desc={t("Which monitor Big Picture opens on at startup.")}

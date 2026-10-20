@@ -1,6 +1,7 @@
 import { Info } from "./icons";
 import { useState } from "react";
 import { useSettings } from "@/lib/settings";
+import { isIos } from "@/lib/platform";
 import { useT } from "@/lib/i18n";
 import { ROW_DESC, Section, ToggleRow } from "./shared";
 import { isTauri } from "./player-panel/internals";
@@ -18,7 +19,8 @@ export function AnimePanel() {
     isTauri
       ? [
           { id: "smooth", label: t("Motion") },
-          { id: "svp", label: t("SVP") },
+          // SVP drives the desktop SVP/VapourSynth install; there is none on iOS.
+          ...(isIos() ? [] : [{ id: "svp", label: t("SVP") }]),
         ]
       : [],
     tab,

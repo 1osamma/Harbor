@@ -224,10 +224,19 @@ jobs:
             xcrun simctl install "$UDID" "$APP"
             xcrun simctl launch "$UDID" "$BUNDLE_ID"
             sleep 45
-            xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$SAFE-portrait.png"
+            xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$SAFE-0-launch.png"
             # Still running after 45s means it did not crash on launch.
             xcrun simctl spawn "$UDID" launchctl list | grep -i "$BUNDLE_ID" || { echo "::error::app is not running on $DEVICE"; }
-            xcrun simctl spawn "$UDID" log show --last 2m --predicate "process CONTAINS[c] 'Harbor'" --style compact > "$RUNNER_TEMP/shots/$SAFE.log" 2>&1 || true
+            # Relaunch into each screen. The app reads HARBOR_SCREENSHOT (src/lib/ios-screenshot-scene.tsx),
+            # skips onboarding and navigates there itself; simctl cannot tap.
+            N=1
+            for SCENE in home movie series long settings settings-page player-portrait player-landscape; do
+              SIMCTL_CHILD_HARBOR_SCREENSHOT="$SCENE" xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE_ID" > /dev/null || true
+              case "$SCENE" in player-*|long) sleep 35 ;; *) sleep 22 ;; esac
+              xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$SAFE-$N-$SCENE.png" || true
+              N=$((N + 1))
+            done
+            xcrun simctl spawn "$UDID" log show --last 8m --predicate "process CONTAINS[c] 'Harbor'" --style compact > "$RUNNER_TEMP/shots/$SAFE.log" 2>&1 || true
             xcrun simctl shutdown "$UDID" || true
           done
           ls -la "$RUNNER_TEMP/shots"

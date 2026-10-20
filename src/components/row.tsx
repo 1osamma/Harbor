@@ -21,6 +21,7 @@ import { resetPosterDock as resetPosterDockItems, updatePosterDock } from "@/lib
 import { scrollDeltaToRevealCard } from "@/lib/poster-backdrop-expansion";
 import { RowCardExpansionProvider } from "@/components/row-card-expansion";
 import { iosFormFactor } from "@/lib/ios-shell";
+import { rowCellWidth } from "@/lib/row-cell-width";
 import { isIos } from "@/lib/platform";
 
 // iOS rows size cards so a fraction of the next one shows past the edge, the touch cue that a
@@ -317,10 +318,7 @@ export function Row({
     const previous = measuredRef.current;
     if (Math.abs(available - previous.width) < 0.5 && effMin === previous.effMin) return;
     measuredRef.current = { width: available, effMin };
-    const fits = Math.max(1, Math.floor((available + GAP) / (effMin + GAP) - PEEK));
-    const raw = PEEK
-      ? (available - fits * GAP) / (fits + PEEK)
-      : (available - (fits - 1) * GAP) / fits;
+    const raw = rowCellWidth(available, effMin, GAP, PEEK);
     const next = (Math.ceil(raw * 64) + 1) / 64;
     batchWrite(() => setCellWidth(next));
   };

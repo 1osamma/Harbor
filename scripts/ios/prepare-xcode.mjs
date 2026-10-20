@@ -7,12 +7,13 @@
 //   1. copies src-tauri/ios/Sources into the app target's sources,
 //   2. adds the MPVKit Swift package (libmpv + FFmpeg + libass for iOS) and
 //      links its LGPL product into the app target,
-//   3. regenerates the .xcodeproj with xcodegen.
+//   3. installs Harbor's app icon and launch screen (src-tauri/ios/Brand),
+//   4. regenerates the .xcodeproj with xcodegen.
 //
 // Usage: node scripts/ios/prepare-xcode.mjs [--no-generate]
 
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -91,7 +92,58 @@ spec = spec.slice(0, targetStart) + block + spec.slice(targetEnd);
 writeFileSync(specPath, spec);
 console.log(`[prepare-xcode] patched ${specPath} (target ${target}, MPVKit ${MPVKIT_VERSION})`);
 
-// 3. Regenerate the project from the patched spec.
+// 3. Branding: Harbor's own icon, full-bleed, and a launch screen identical to the web boot
+// splash (index.html: the boat, 96pt wide, #f5f5f5 on #0a0a0a), so launch hands over to the page
+// without a flash. Assets come from src-tauri/ios/Brand (see its README).
+const brandDir = join(root, "src-tauri", "ios", "Brand");
+function findUnder(dir, name) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.name === name) return path;
+    if (entry.isDirectory() && entry.name !== "build" && !entry.name.endsWith(".xcodeproj")) {
+      const found = findUnder(path, name);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+const appIconSet = findUnder(appleDir, "AppIcon.appiconset");
+if (!appIconSet) fail("AppIcon.appiconset not found in the generated project");
+for (const name of readdirSync(appIconSet)) rmSync(join(appIconSet, name), { force: true });
+cpSync(join(brandDir, "AppIcon-1024.png"), join(appIconSet, "AppIcon-1024.png"));
+writeFileSync(
+  join(appIconSet, "Contents.json"),
+  JSON.stringify(
+    {
+      images: [{ filename: "AppIcon-1024.png", idiom: "universal", platform: "ios", size: "1024x1024" }],
+      info: { author: "xcode", version: 1 },
+    },
+    null,
+    2,
+  ),
+);
+const logoSet = join(dirname(appIconSet), "LaunchLogo.imageset");
+mkdirSync(logoSet, { recursive: true });
+for (const scale of [1, 2, 3]) {
+  cpSync(join(brandDir, `LaunchLogo@${scale}x.png`), join(logoSet, `LaunchLogo@${scale}x.png`));
+}
+writeFileSync(
+  join(logoSet, "Contents.json"),
+  JSON.stringify(
+    {
+      images: [1, 2, 3].map((s) => ({ filename: `LaunchLogo@${s}x.png`, idiom: "universal", scale: `${s}x` })),
+      info: { author: "xcode", version: 1 },
+    },
+    null,
+    2,
+  ),
+);
+const launchStoryboard = findUnder(appleDir, "LaunchScreen.storyboard");
+if (!launchStoryboard) fail("LaunchScreen.storyboard not found in the generated project");
+cpSync(join(brandDir, "LaunchScreen.storyboard"), launchStoryboard);
+console.log(`[prepare-xcode] branding: ${appIconSet}, ${logoSet}, ${launchStoryboard}`);
+
+// 4. Regenerate the project from the patched spec.
 if (!process.argv.includes("--no-generate")) {
   execFileSync("xcodegen", ["generate", "--spec", specPath], { cwd: appleDir, stdio: "inherit" });
   console.log("[prepare-xcode] xcodegen generate done");

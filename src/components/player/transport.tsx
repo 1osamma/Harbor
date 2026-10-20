@@ -29,6 +29,7 @@ import {
 import { renderControl, type ControlContext } from "./transport/control-renderer";
 import { SongIdToast } from "@/components/song-id-toast";
 import { useCastModalPlay } from "./use-cast-modal-play";
+import { isIos } from "@/lib/platform";
 
 // This is the mouse-era transport. Big Picture suppresses it outright and
 // renders views/big-picture/player instead, so nothing here scales for ten feet.
@@ -349,6 +350,9 @@ export function Transport({
     writePlayerChromeConfig("default", next);
     setChromeConfig(next);
   };
+  // iOS lays the chrome out for touch (playback cluster centred on screen, menus on the bottom
+  // row), so a narrow phone keeps every control, icon-only, instead of dropping them by width.
+  const ios = isIos();
   const ctx: ControlContext = {
     t,
     snap,
@@ -359,9 +363,9 @@ export function Transport({
     showDraw,
     isWatchTogether: showDraw,
     playing,
-    mid,
-    compact,
-    tight,
+    mid: ios ? true : mid,
+    compact: ios ? false : compact,
+    tight: ios ? false : tight,
     active: visible,
     isLiveChannel,
     showEpisodeNav,
@@ -520,12 +524,12 @@ export function Transport({
               <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div data-transport-center className="flex items-center gap-1.5">
             {controlsInSlot(chromeConfig, "bottom-center").map((c) => (
               <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
             ))}
           </div>
-          <div className="flex items-center gap-1.5 justify-self-end">
+          <div data-transport-menus className="flex items-center gap-1.5 justify-self-end">
             {controlsInSlot(chromeConfig, "bottom-right").map((c) => (
               <Fragment key={c.id}>{renderFadedControl(c.id)}</Fragment>
             ))}

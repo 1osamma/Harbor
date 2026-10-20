@@ -2,6 +2,7 @@ import { AppWindow, Frame, Move, PanelTop, PanelTopDashed } from "./icons";
 import { useEffect, useState, type ReactNode, useRef } from "react";
 import { getCustomThemes, subscribeCustomThemes } from "@/lib/custom-themes";
 import { useSettings } from "@/lib/settings";
+import { isIos } from "@/lib/platform";
 import { FEATURED_CUSTOM_THEMES, getThemeById, THEME_PRESETS, type ThemeSettings } from "@/lib/theme";
 import { nextBackgroundImage } from "@/lib/theme-background";
 import { useT } from "@/lib/i18n";
@@ -206,7 +207,7 @@ function WindowTab() {
   const { settings } = useSettings();
   return (
     <>
-      {isTauri && (
+      {isTauri && !isIos() && (
         <Section
           title={t("Window title bar")}
           subtitle={t("Choose whether your operating system draws the title bar, or Harbor draws its own.")}
@@ -222,7 +223,7 @@ function WindowTab() {
         </Section>
       )}
 
-      {isTauri && (
+      {isTauri && !isIos() && (
         <Section
           title={t("Moving the window")}
           subtitle={t("Choose where you can grab Harbor to drag it around your screen.")}

@@ -46,6 +46,9 @@ pub struct HarborMpvVtable {
     error_string: extern "C" fn(code: i32) -> *const c_char,
     /// Returns a malloc'd version string, or null when libmpv is unusable.
     version: extern "C" fn() -> *mut c_char,
+    /// Fullscreen video presentation: landscape on iPhone, hidden status bar and
+    /// home indicator. HarborPresentation.swift.
+    set_presentation: extern "C" fn(active: bool),
 }
 
 static VTABLE: AtomicPtr<HarborMpvVtable> = AtomicPtr::new(std::ptr::null_mut());
@@ -698,6 +701,25 @@ pub async fn mpv_set_geometry(geom: MpvGeometry) -> Result<(), String> {
         return Ok(());
     }
     (vt.set_geometry)(geom.css_left, geom.css_top, geom.css_width, geom.css_height);
+    Ok(())
+}
+
+/// CI screenshots only. `SIMCTL_CHILD_HARBOR_SCREENSHOT=<scene> xcrun simctl launch …` reaches
+/// the app as `HARBOR_SCREENSHOT`, and the page opens that scene (src/lib/ios-screenshot-scene.tsx).
+/// Nothing sets it on a device, so this answers None there.
+#[tauri::command]
+pub fn ios_screenshot_scene() -> Option<String> {
+    std::env::var("HARBOR_SCREENSHOT")
+        .ok()
+        .filter(|s| !s.is_empty() && s.len() <= 40 && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-'))
+}
+
+/// The full player opened (true) or closed (false). Not tied to the mpv session:
+/// switching source stops and restarts mpv without leaving the player.
+#[tauri::command]
+pub async fn ios_player_presentation(active: bool) -> Result<(), String> {
+    let vt = vt()?;
+    (vt.set_presentation)(active);
     Ok(())
 }
 

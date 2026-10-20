@@ -265,7 +265,7 @@ function Header({
           )}
         </div>
       </div>
-      <div className="flex items-center gap-1 border-b border-edge-soft">
+      <div data-library-tabs className="flex items-center gap-1 border-b border-edge-soft">
         <TabBtn active={tab === "library"} onClick={() => onTab("library")}>
           <Library size={14} strokeWidth={2.2} />
           {t("Library")}

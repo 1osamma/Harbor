@@ -1,6 +1,6 @@
 import { AlertTriangle } from "../icons";
 import { useEffect, useState } from "react";
-import { isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { isIos, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { probeMpv, type MpvProbe } from "@/lib/player/mpv";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -73,6 +73,8 @@ export function PlayerEnginePanel() {
               tags={c.recommended ? <Tag accent text={t("Recommended")} /> : undefined}
             />
           ))}
+          {/* iOS always embeds mpv under the page; there is no separate window or monitor. */}
+          {!isIos() && (
           <ToggleRow
             label={t("Embed mpv inside Harbor window")}
             sub={t(
@@ -88,7 +90,8 @@ export function PlayerEnginePanel() {
                 : undefined
             }
           />
-          {(!settings.playerMpvEmbed || settings.playerHdrOpaqueWindow) && (
+          )}
+          {!isIos() && (!settings.playerMpvEmbed || settings.playerHdrOpaqueWindow) && (
             <>
               <DisplayPickerRow
                 label={t("Separate window display")}
@@ -156,6 +159,8 @@ export function PlayerEnginePanel() {
           </SettingGroup>
         )}
 
+        {/* Casting (Chromecast/DLNA) is a desktop-only module. */}
+        {!isIos() && (
         <SettingGroup label={t("Casting")}>
           <SettingRow
             label={t("Device compatibility")}
@@ -166,6 +171,7 @@ export function PlayerEnginePanel() {
             <span className="text-[15px] text-ink-muted">{t("Automatic")}</span>
           </SettingRow>
         </SettingGroup>
+        )}
 
         <SettingGroup label={t("Connection")}>
           <BandwidthInput />
