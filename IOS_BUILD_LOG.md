@@ -5,6 +5,7 @@ Newest first.
 
 | # | Date | Where | Commit | Result | Root cause / notes |
 |---|---|---|---|---|---|
+| 5 | 2026-10-20 | CI run 39345684445 (simulator) | – | FAILED in `cargo build` of harbor lib | **All dependencies compiled for aarch64-apple-ios-sim.** 3 errors in Harbor itself: `modal_overlay.rs:81` `always_on_top`, `pip_window.rs:165` `decorations`, `pip_window.rs:299` `unminimize` — desktop-only tauri window APIs in modules not gated `cfg(desktop)`. Fix: gate both modules `#[cfg(desktop)]` (only referenced from desktop `run()` and desktop `mpv.rs`). |
 | 4 | 2026-10-20 | CI run 39345352304 | – | FAILED in "Configure pnpm" | pnpm 11 global config.yaml rejects `confirm-modules-purge`. Dropped it; `verify-deps-before-run=false` alone stops the reinstall. |
 | 3 | 2026-10-20 | CI run 39344058176 (simulator job) | 59a… | FAILED in "Build Rust Code" | Not a Rust error: pnpm 11 inside the Xcode script phase re-verified deps and aborted (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`). Fix: runner-global `verify-deps-before-run=false`, `confirm-modules-purge=false`. tauri ios init, prepare-xcode.mjs and MPVKit resolution all succeeded. |
 | 2 | 2026-10-20 | local (Windows) | working tree | `pnpm test`: 6043 pass / 106 fail | Identical to unmodified upstream baseline (same 106 tests fail before the iOS changes). No regressions. |

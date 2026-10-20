@@ -100,6 +100,7 @@ mod install_features;
 mod media_controls;
 #[cfg(target_os = "windows")]
 mod taskbar;
+#[cfg(desktop)]
 mod modal_overlay;
 #[cfg(desktop)]
 mod mpv;
@@ -115,6 +116,7 @@ mod multiview;
 mod music;
 #[cfg(desktop)]
 mod pip;
+#[cfg(desktop)]
 mod pip_window;
 #[cfg(target_os = "macos")]
 mod pip_mac;
