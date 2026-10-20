@@ -233,7 +233,7 @@ function SourceRow({
             </span>
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+        <div className="flex flex-col items-end gap-2 pt-0.5 w-auto min-w-0">
           <div className="flex items-center gap-3">
             {link && <CopyLinkButton url={link} />}
             <HostMatchChip match={match} />

@@ -415,6 +415,18 @@ function alternateStreamTypes(addon: Addon, type: string, id: string): string[] 
   return streamTypesAcceptingId(addon, id).filter((t) => t !== type);
 }
 
+const MAX_RETRIES = 2;
+const BASE_RETRY_DELAY_MS = 1500;
+
+function isTransientFailure(code: AddonFailureCode | undefined): boolean {
+  return code === "timeout" || code === "unreachable";
+}
+
+function retryDelay(attempt: number): number {
+  // Exponential backoff: 1.5s, 3s, 6s...
+  return BASE_RETRY_DELAY_MS * 2 ** attempt;
+}
+
 async function fetchOne(
   addon: Addon,
   type: string,
@@ -500,10 +512,27 @@ async function fetchOne(
     }
   };
 
-  const primary = await queryOnce(type);
+  // Query with retry for transient failures
+  const queryWithRetry = async (t: string): Promise<{ streams?: Stream[]; failure?: AddonFailureCode }> => {
+    let lastFailure: AddonFailureCode | undefined;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      const result = await queryOnce(t);
+      if (result.streams && result.streams.length > 0) return result;
+      lastFailure = result.failure;
+      // Don't retry on non-transient failures or if parent signal aborted
+      if (!isTransientFailure(lastFailure) || signal.aborted) break;
+      if (attempt < MAX_RETRIES) {
+        dlog(`[addons] ${addon.manifest.name} ${t}/${id}: retry ${attempt + 1}/${MAX_RETRIES} after ${retryDelay(attempt)}ms (${lastFailure})`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)));
+      }
+    }
+    return { streams: [], failure: lastFailure };
+  };
+
+  const primary = await queryWithRetry(type);
   if (!primary.streams) return { streams: [], failure: primary.failure };
   if (primary.streams.length > 0 || altTypes.length === 0) return { streams: primary.streams };
-  const settled = await Promise.allSettled(altTypes.map((t) => queryOnce(t)));
+  const settled = await Promise.allSettled(altTypes.map((t) => queryWithRetry(t)));
   let failure: AddonFailureCode | undefined;
   for (const r of settled) {
     if (r.status !== "fulfilled") continue;

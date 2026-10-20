@@ -676,12 +676,16 @@ html[data-os="ios"][data-ios-form="phone"] [data-episode-row] > :last-child butt
 html[data-os="ios"] .harbor-settings-shell .hset-top-space {
   block-size: var(--ios-safe-top) !important;
 }
+
+/* Settings pages must always reserve space for the tab bar (and safe area)
+   even when the tab bar is hidden (data-ios-tabbar removed), so content
+   never gets cut off at the bottom. Use the full calculated height. */
 html[data-os="ios"] .harbor-settings-shell .hset-main {
-  padding-bottom: calc(var(--ios-tabbar-space) + 20px);
+  padding-bottom: calc(var(--ios-tabbar-height) + var(--ios-tabbar-gap) + 20px);
 }
 html[data-os="ios"] .ios-settings-scroll {
   height: 100%;
-  padding: 4px var(--ios-gutter) calc(var(--ios-tabbar-space) + 24px) !important;
+  padding: 4px var(--ios-gutter) calc(var(--ios-tabbar-height) + var(--ios-tabbar-gap) + 24px) !important;
 }
 .ios-settings {
   display: flex;

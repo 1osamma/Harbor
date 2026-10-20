@@ -52,7 +52,7 @@ export function StremioRow({
         failed ? "ring-danger/40 bg-danger/5" : "ring-edge-soft/50"
       }`}
     >
-      <div className="flex w-[68px] shrink-0 flex-col items-center justify-center">
+      <div className="flex w-[68px] flex-col items-center justify-center min-w-0">
         <AddonLogo
           addonId={stream.addonId}
           addonName={addonName}
@@ -84,7 +84,7 @@ export function StremioRow({
           <p className="text-[13px] font-medium text-danger">{t("Unavailable, try another.")}</p>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2 self-center">
+      <div className="flex items-center gap-2 self-center w-auto min-w-0">
         {link && <CopyLinkButton url={link} size={16} className="h-9 w-9" />}
         <button
           type="button"
