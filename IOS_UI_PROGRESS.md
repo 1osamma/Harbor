@@ -154,3 +154,43 @@ player-portrait, player-landscape) via `HARBOR_SCREENSHOT` (`src/lib/ios-screens
 - Settings search can still list rows that are hidden on iOS (it opens their page).
 - Native PiP with mpv still unimplemented (desktop PiP hidden on iOS).
 - Subtitle rendering path (DOM vs libass for ASS/Arabic) unchanged from session 1; device test needed.
+
+## Codex continuation (2026-10-20)
+
+- Resumed the clean branch at `b8e99aa01`; preserved the implementation in `c3feb442d`.
+  Run [39376176469](https://github.com/1osamma/Harbor/actions/runs/39376176469) completed with
+  **both jobs successful**. The device build, IPA inspection and upload passed.
+  [Unsigned IPA for c3feb442d](https://github.com/1osamma/Harbor/actions/runs/39376176469/artifacts/12244480662).
+- Simulator logs confirm live processes after launch on iPhone 16 Pro and iPad Pro 13-inch M4,
+  and capture/upload of 18 scene screenshots. **Visual review remains blocked**: the connector
+  returned the ZIP, but the cloud network rejects its download host with HTTP 403. Do not infer
+  safe-area correctness, video playback or landscape rotation from successful screenshot capture.
+- Native review: the C/Rust vtable field order agrees; presentation uses the existing bridge;
+  drawable dimensions follow bounds times scale. Found a handle lifetime race: the Swift lock
+  was released before libmpv used the pointer, allowing concurrent stop to free it. The lock now
+  covers API calls and event reads. Foreground recovery preserves `vid=no`, and stop clears the
+  saved video track. Native compilation and runtime verification of these changes require CI;
+  real-device playback, audio/subtitle switching and lifecycle stress still need an iPhone.
+- Navigation: cancelled edge swipes no longer navigate. Adding a second finger cancels the
+  gesture; pending animations/timers are cleaned up on unmount and cannot navigate afterwards.
+- Settings search filters destinations already hidden on iOS (desktop window/PiP, SVP, casting,
+  updater, Discord presence, monitor selection), retaining shared backup and privacy controls.
+  Experimental installer controls are also excluded on iOS.
+- CI smoke checks now fail for missing simulators, unsuccessful scene launches/captures, or a
+  missing live process. Logs are collected on failure. Library and Search scenes are included.
+- Local checks: 15 focused regression tests passed. Chromium at 393×852 exercised completed,
+  cancelled and multi-touch swipes in Settings, and Home/Library/Search/Discover navigation;
+  document width stayed at 393. Catalog requests failed under this environment's network setup,
+  so these checks do not verify online catalog services. Browser emulation is not native WebKit.
+- Required `pnpm run check` is blocked because the existing `vp` executable is absent;
+  `pnpm tauri:build:linux-system` is blocked because Rust/cargo is not installed. These are
+  environment limitations, not successful desktop native validation.
+- Native mpv PiP, Dynamic Type and independent per-tab navigation stacks remain deferred.
+  Physical-device scaling, rotation/restore, status bar/home indicator, ASS/Arabic subtitles,
+  background audio and foreground recovery remain unverified.
+- Additional browser checks: iOS Settings search excludes “Picture in picture style”, desktop
+  search retains it, and both retain “Export everything”. Landscape Settings at 852×393 has
+  no document overflow. Desktop Settings at 1440×1000 retains its sidebar and content layout.
+- `NODE_OPTIONS=--max-old-space-size=6144 pnpm run typecheck`: passed. The initial attempt
+  exhausted Node's default 2 GB heap; the 6 GB setting matches CI. Full-suite comparison is
+  still running; the historical 106 failures are not being presented as a fresh result.

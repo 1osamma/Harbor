@@ -38,7 +38,7 @@ export function UpdatesPanel() {
         </Section>
       )}
 
-      {(experimentalAccess || experimentalInstalled) && <ExperimentalBuildsSection />}
+      {!isIos() && (experimentalAccess || experimentalInstalled) && <ExperimentalBuildsSection />}
 
       <Section
         title={t("Backup & restore")}

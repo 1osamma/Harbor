@@ -210,6 +210,12 @@ jobs:
           echo "App: $APP"
           BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
           mkdir -p "$RUNNER_TEMP/shots"
+          collect_logs() {
+            if [ -n "${UDID:-}" ] && [ -n "${SAFE:-}" ]; then
+              xcrun simctl spawn "$UDID" log show --last 20m --predicate "process CONTAINS[c] 'Harbor'" --style compact > "$RUNNER_TEMP/shots/$SAFE.log" 2>&1 || true
+            fi
+          }
+          trap collect_logs EXIT
           for DEVICE in "iPhone 16 Pro" "iPad Pro 13-inch (M4)"; do
             UDID=$(xcrun simctl list devices available -j | node -e '
               const d=JSON.parse(require("fs").readFileSync(0,"utf8")).devices;
@@ -217,7 +223,7 @@ jobs:
               for (const k of Object.keys(d).filter(k=>k.includes("iOS")).sort().reverse())
                 for (const x of d[k]) if (x.name===want) { console.log(x.udid); process.exit(0); }
             ' "$DEVICE")
-            if [ -z "$UDID" ]; then echo "no simulator named $DEVICE"; continue; fi
+            if [ -z "$UDID" ]; then echo "::error::no simulator named $DEVICE"; exit 1; fi
             SAFE=$(echo "$DEVICE" | tr ' ()' '___')
             xcrun simctl boot "$UDID" || true
             xcrun simctl bootstatus "$UDID" -b
@@ -226,18 +232,20 @@ jobs:
             sleep 45
             xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$SAFE-0-launch.png"
             # Still running after 45s means it did not crash on launch.
-            xcrun simctl spawn "$UDID" launchctl list | grep -i "$BUNDLE_ID" || { echo "::error::app is not running on $DEVICE"; }
+            xcrun simctl spawn "$UDID" launchctl list | awk -v bundle="$BUNDLE_ID" 'index($3, bundle) && $1 ~ /^[0-9]+$/ { found=1; print } END { exit !found }' || { echo "::error::app is not running on $DEVICE"; exit 1; }
             # Relaunch into each screen. The app reads HARBOR_SCREENSHOT (src/lib/ios-screenshot-scene.tsx),
             # skips onboarding and navigates there itself; simctl cannot tap.
             N=1
-            for SCENE in home movie series long settings settings-page player-portrait player-landscape; do
-              SIMCTL_CHILD_HARBOR_SCREENSHOT="$SCENE" xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE_ID" > /dev/null || true
+            for SCENE in home movie series long settings settings-page library search player-portrait player-landscape; do
+              SIMCTL_CHILD_HARBOR_SCREENSHOT="$SCENE" xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE_ID" > /dev/null
               case "$SCENE" in player-*|long) sleep 35 ;; *) sleep 22 ;; esac
-              xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$SAFE-$N-$SCENE.png" || true
+              xcrun simctl io "$UDID" screenshot "$RUNNER_TEMP/shots/$SAFE-$N-$SCENE.png"
+              xcrun simctl spawn "$UDID" launchctl list | awk -v bundle="$BUNDLE_ID" 'index($3, bundle) && $1 ~ /^[0-9]+$/ { found=1; print } END { exit !found }' || { echo "::error::app exited in $SCENE on $DEVICE"; exit 1; }
               N=$((N + 1))
             done
-            xcrun simctl spawn "$UDID" log show --last 8m --predicate "process CONTAINS[c] 'Harbor'" --style compact > "$RUNNER_TEMP/shots/$SAFE.log" 2>&1 || true
+            collect_logs
             xcrun simctl shutdown "$UDID" || true
+            UDID=""
           done
           ls -la "$RUNNER_TEMP/shots"
 

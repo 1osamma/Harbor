@@ -96,13 +96,9 @@ final class HarborMpv {
   private var savedVid: String?
   private var observersInstalled = false
 
-  // MARK: handle access
-
-  private func current() -> OpaquePointer? {
-    lock.lock()
-    defer { lock.unlock() }
-    return handle
-  }
+  // The lock covers each libmpv call, not just reading the pointer. Otherwise
+  // stop can free a handle between a property/lifecycle call's lookup and use.
+  // Never dispatch synchronously to the main thread while holding this lock.
 
   // MARK: view hierarchy
 
@@ -163,7 +159,9 @@ final class HarborMpv {
   // track keeps audio playing in the background (UIBackgroundModes: audio) and
   // restores the user's chosen track afterwards.
   private func enterBackground() {
-    guard let mpv = current() else { return }
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else { return }
     if let cstr = mpv_get_property_string(mpv, "vid") {
       savedVid = String(cString: cstr)
       mpv_free(cstr)
@@ -172,10 +170,12 @@ final class HarborMpv {
   }
 
   private func enterForeground() {
-    guard let mpv = current() else { return }
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else { return }
     let vid = savedVid ?? "auto"
     savedVid = nil
-    mpv_set_property_string(mpv, "vid", vid == "no" ? "auto" : vid)
+    mpv_set_property_string(mpv, "vid", vid)
   }
 
   // MARK: C entry points
@@ -210,13 +210,17 @@ final class HarborMpv {
   }
 
   func setOption(_ name: String, _ value: String) -> Int32 {
-    guard let mpv = current() else { return MPV_ERROR_UNINITIALIZED.rawValue }
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else { return MPV_ERROR_UNINITIALIZED.rawValue }
     if name == "target-colorspace-hint" { hdrPassthrough = value == "yes" }
     return mpv_set_option_string(mpv, name, value)
   }
 
   func initialize() -> Int32 {
-    guard let mpv = current() else { return MPV_ERROR_UNINITIALIZED.rawValue }
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else { return MPV_ERROR_UNINITIALIZED.rawValue }
     let rc = mpv_initialize(mpv)
     if rc < 0 { return rc }
     let ctx = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
@@ -228,7 +232,9 @@ final class HarborMpv {
   }
 
   func observe(_ name: String, _ format: Int32, _ id: UInt64) -> Int32 {
-    guard let mpv = current() else { return MPV_ERROR_UNINITIALIZED.rawValue }
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else { return MPV_ERROR_UNINITIALIZED.rawValue }
     // Numbering is libmpv's, as sent by mpv_ios.rs.
     let fmt: mpv_format
     switch format {
@@ -243,7 +249,9 @@ final class HarborMpv {
   }
 
   func command(_ json: String) -> Int32 {
-    guard let mpv = current() else { return MPV_ERROR_UNINITIALIZED.rawValue }
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else { return MPV_ERROR_UNINITIALIZED.rawValue }
     guard let data = json.data(using: .utf8),
       let args = (try? JSONSerialization.jsonObject(with: data)) as? [String], !args.isEmpty
     else { return MPV_ERROR_INVALID_PARAMETER.rawValue }
@@ -258,12 +266,16 @@ final class HarborMpv {
   }
 
   func setProperty(_ name: String, _ value: String) -> Int32 {
-    guard let mpv = current() else { return MPV_ERROR_UNINITIALIZED.rawValue }
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else { return MPV_ERROR_UNINITIALIZED.rawValue }
     return mpv_set_property_string(mpv, name, value)
   }
 
   func getProperty(_ name: String, _ err: UnsafeMutablePointer<Int32>?) -> UnsafeMutablePointer<CChar>? {
-    guard let mpv = current() else {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let mpv = handle else {
       err?.pointee = MPV_ERROR_UNINITIALIZED.rawValue
       return nil
     }
@@ -296,6 +308,7 @@ final class HarborMpv {
       videoView?.isHidden = true
       videoView?.metalLayer.wantsExtendedDynamicRangeContent = false
       UIApplication.shared.isIdleTimerDisabled = false
+      savedVid = nil
     }
   }
 
@@ -339,7 +352,9 @@ final class HarborMpv {
   private func drainEvents() {
     eventQueue.async { [weak self] in
       guard let self else { return }
-      while let mpv = self.current() {
+      self.lock.lock()
+      defer { self.lock.unlock() }
+      while let mpv = self.handle {
         guard let event = mpv_wait_event(mpv, 0) else { break }
         let id = event.pointee.event_id
         if id == MPV_EVENT_NONE { break }

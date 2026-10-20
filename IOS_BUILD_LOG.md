@@ -15,3 +15,14 @@ Newest first.
 | 3 | 2026-10-20 | CI run 39344058176 (simulator job) | 59a… | FAILED in "Build Rust Code" | Not a Rust error: pnpm 11 inside the Xcode script phase re-verified deps and aborted (`ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`). Fix: runner-global `verify-deps-before-run=false`, `confirm-modules-purge=false`. tauri ios init, prepare-xcode.mjs and MPVKit resolution all succeeded. |
 | 2 | 2026-10-20 | local (Windows) | working tree | `pnpm test`: 6043 pass / 106 fail | Identical to unmodified upstream baseline (same 106 tests fail before the iOS changes). No regressions. |
 | 1 | 2026-10-20 | local (Windows) | working tree | `pnpm run typecheck` passed | — |
+
+## 2026-10-20 — Run 39376176469 (c3feb442d), reviewed by Codex
+
+Both device and simulator jobs succeeded. Device build and inspection passed: arm64,
+`app.harbor`, 1.0.0, minimum iOS 16.0; IPA size 172,868,590 bytes. Rust, Swift, mpv markers and
+FFmpeg framework inspection passed. [IPA artifact](https://github.com/1osamma/Harbor/actions/runs/39376176469/artifacts/12244480662).
+Simulator logs show live iPhone/iPad processes after initial launch and 18 captured screenshots.
+[Simulator artifact](https://github.com/1osamma/Harbor/actions/runs/39376176469/artifacts/12244327865).
+Visual review is blocked by the cloud download host's HTTP 403; no playback/rotation claim.
+The original smoke script ignored scene launch/capture failures and did not assert a live PID
+per scene; the continuation tightens those checks and captures failure logs.

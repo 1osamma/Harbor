@@ -35,6 +35,15 @@ export function IosSwipeBack({ disabled }: { disabled: boolean }) {
     let lastT = 0;
     let velocity = 0;
     let page: HTMLElement | null = null;
+    let settling = false;
+    const timers = new Set<number>();
+    const later = (fn: () => void, ms: number) => {
+      const timer = window.setTimeout(() => {
+        timers.delete(timer);
+        fn();
+      }, ms);
+      timers.add(timer);
+    };
 
     const canSwipe = () => {
       const s = state.current;
@@ -48,7 +57,11 @@ export function IosSwipeBack({ disabled }: { disabled: boolean }) {
       if (animate) {
         el.style.transition = "transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1)";
         el.style.transform = "translate3d(0, 0, 0)";
-        window.setTimeout(() => clear(el), 280);
+        later(() => {
+          clear(el);
+          if (page === el) page = null;
+          settling = false;
+        }, 280);
       } else {
         clear(el);
       }
@@ -61,6 +74,8 @@ export function IosSwipeBack({ disabled }: { disabled: boolean }) {
     };
 
     const onStart = (e: TouchEvent) => {
+      if (settling) return;
+      if (tracking) cancel();
       tracking = false;
       claimed = false;
       if (e.touches.length !== 1) return;
@@ -76,6 +91,10 @@ export function IosSwipeBack({ disabled }: { disabled: boolean }) {
 
     const onMove = (e: TouchEvent) => {
       if (!tracking) return;
+      if (e.touches.length !== 1 || !canSwipe()) {
+        cancel();
+        return;
+      }
       const t = e.touches[0];
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
@@ -105,13 +124,26 @@ export function IosSwipeBack({ disabled }: { disabled: boolean }) {
       }
     };
 
+    const cancel = () => {
+      tracking = false;
+      claimed = false;
+      if (page) {
+        settling = true;
+        reset(page, true);
+      }
+    };
+
     const onEnd = () => {
       if (!tracking) return;
+      if (!canSwipe()) {
+        cancel();
+        return;
+      }
       tracking = false;
       if (!claimed) return;
       claimed = false;
       const el = page;
-      page = null;
+      settling = !!el;
       const width = window.innerWidth || 1;
       if (!shouldCommitSwipe(lastX - startX, width, velocity)) {
         reset(el, true);
@@ -126,6 +158,8 @@ export function IosSwipeBack({ disabled }: { disabled: boolean }) {
         }
         // The page left the stack (or was replaced); put the element back for its next use.
         requestAnimationFrame(() => el && clear(el));
+        page = null;
+        settling = false;
       };
       if (!el) {
         finish();
@@ -133,18 +167,20 @@ export function IosSwipeBack({ disabled }: { disabled: boolean }) {
       }
       el.style.transition = "transform 200ms cubic-bezier(0.3, 0.7, 0.4, 1)";
       el.style.transform = `translate3d(${width}px, 0, 0)`;
-      window.setTimeout(finish, 190);
+      later(finish, 190);
     };
 
     window.addEventListener("touchstart", onStart, { passive: true });
     window.addEventListener("touchmove", onMove, { passive: false });
     window.addEventListener("touchend", onEnd, { passive: true });
-    window.addEventListener("touchcancel", onEnd, { passive: true });
+    window.addEventListener("touchcancel", cancel, { passive: true });
     return () => {
       window.removeEventListener("touchstart", onStart);
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
-      window.removeEventListener("touchcancel", onEnd);
+      window.removeEventListener("touchcancel", cancel);
+      for (const timer of timers) window.clearTimeout(timer);
+      if (page) clear(page);
     };
   }, []);
 

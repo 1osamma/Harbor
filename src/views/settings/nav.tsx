@@ -13,6 +13,8 @@ import { TOP_GROUPS } from "./groups";
 import { markSectionSeen, useSettingsNew } from "./settings-new";
 import { useExperimentalAccess } from "@/lib/updater/experimental-access";
 import { useStreamPluginCount } from "@/lib/plugins";
+import { isIos } from "@/lib/platform";
+import { iosSettingsOptionVisible } from "./ios-availability";
 
 type IconProps = { size?: number; strokeWidth?: number };
 
@@ -11047,6 +11049,7 @@ export function useNavSearch(trimmed: string) {
     if (!trimmed) return null;
     return SETTINGS_OPTIONS.filter(
       (o) =>
+        (!isIos() || iosSettingsOptionVisible(o)) &&
         (o.label !== "Experimental builds" || experimentalAccess) &&
         matchesSettingsSearch(
           trimmed,

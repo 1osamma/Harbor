@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useOnboarding } from "@/lib/onboarding";
 import { isIos } from "@/lib/platform";
 import { useView } from "@/lib/view";
+import { useSearchActions } from "@/lib/search-context";
 
 /**
  * CI screenshots of the iOS simulator. The workflow relaunches the app with
@@ -20,6 +21,7 @@ export function screenshotSceneKeepsPortrait(): boolean {
 
 export function IosScreenshotScene() {
   const view = useView();
+  const { setOpen: setSearchOpen } = useSearchActions();
   const { onboarded, finishOnboarding } = useOnboarding();
   const viewRef = useRef(view);
   viewRef.current = view;
@@ -40,6 +42,13 @@ export function IosScreenshotScene() {
         switch (name) {
           case "home":
             v().setView("home");
+            break;
+          case "library":
+            v().setView("library");
+            break;
+          case "search":
+            v().setView("home");
+            setSearchOpen(true);
             break;
           case "movie":
             v().openMeta({ id: "tt27199254", type: "movie", name: "Practical Magic 2" });
