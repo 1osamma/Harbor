@@ -222,7 +222,7 @@ function Header({
   const { setView } = useView();
   const { settings, update } = useSettings();
   return (
-    <header className="flex flex-col gap-5">
+    <header data-library-header className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-6">
         <div className="flex flex-col gap-1.5">
           <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-ink-subtle">

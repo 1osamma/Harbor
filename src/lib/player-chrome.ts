@@ -4,6 +4,7 @@ import {
   type SaveResult,
 } from "./player-chrome-profiles";
 import { DEFAULT_PLAYER_ICONS } from "./default-player-icons";
+import { isIos } from "./platform";
 
 export type PlayerSlot =
   | "top-left"
@@ -341,12 +342,24 @@ export function resetPlayerChromeConfig(theme: ThemeId): PlayerChromeConfig {
   return baseline;
 }
 
+// Controls whose backend does not exist on iOS: there is no window to fullscreen or close, no
+// NVIDIA RTX pipeline, and the detached PiP window is a desktop-only Tauri window. Showing them
+// would put buttons on screen that do nothing.
+const IOS_UNAVAILABLE = new Set<PlayerControlId>([
+  "fullscreen",
+  "window-controls",
+  "rtx-hdr-toggle",
+  "rtx-vsr-toggle",
+  "pip",
+]);
+
 export function controlsInSlot(
   config: PlayerChromeConfig,
   slot: PlayerSlot,
 ): PlayerControlConfig[] {
+  const ios = isIos();
   return config.controls
-    .filter((c) => c.slot === slot && !c.hidden)
+    .filter((c) => c.slot === slot && !c.hidden && !(ios && IOS_UNAVAILABLE.has(c.id)))
     .slice()
     .sort((a, b) => a.order - b.order);
 }

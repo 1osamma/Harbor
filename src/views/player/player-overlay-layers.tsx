@@ -127,6 +127,7 @@ export type PlayerOverlayLayersProps = {
   togglePipMode: () => void;
   setDrawMode: (fn: (d: boolean) => boolean) => void;
   wakeChrome: () => void;
+  hideChrome: () => void;
   setHideOthersDrawings: (fn: (h: boolean) => boolean) => void;
   canPickAnother: boolean;
   resolvedImdbId: string | null;
@@ -253,6 +254,7 @@ export const PlayerOverlayLayers = memo(function PlayerOverlayLayers(p: PlayerOv
         onClick={p.playPauseToggle}
         onDoubleClick={p.toggleFullscreen}
         onWheelVolume={p.onVolumeWheel}
+        touch={{ onSeekStep: p.onSeekStep, hideChrome: p.hideChrome }}
       />
 
       {p.tenFoot ? (

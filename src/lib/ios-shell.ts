@@ -125,3 +125,6 @@ export function initIosShell(): void {
   root.style.setProperty("-webkit-text-size-adjust", "100%");
   installLongPressContextMenu();
 }
+
+/** Fired by the Profile tab when it is tapped while Settings is already open. */
+export const IOS_SETTINGS_ROOT_EVENT = "harbor:ios-settings-root";

@@ -21,6 +21,10 @@ import { PageActionsProvider, type PageActionReg } from "./settings/page-actions
 import { SettingsFooter } from "./settings/settings-footer";
 import { SettingsActiveContext, type SectionId } from "./settings/shared";
 import { SectionCards } from "./settings/section-cards";
+import { IosSettingsHome } from "./settings/ios-settings-home";
+import { isIos } from "@/lib/platform";
+import { IOS_SETTINGS_ROOT_EVENT } from "@/lib/ios-shell";
+import { ChevronLeft } from "lucide-react";
 import { LicensesPanel } from "./settings/licenses-panel";
 import { IconsPanel } from "./settings/icons-panel";
 import "./settings/tv-panel/store";
@@ -370,6 +374,10 @@ export function Settings({ visible = true }: { visible?: boolean }) {
   const [pendingPage, setPendingPage] = useState<{ section: SectionId; tab?: string } | null>(null);
   const [query, setQuery] = useState("");
   const compact = useMediaQuery("(max-width: 899px)");
+  // iOS opens Settings on a grouped list of pages, like the system Settings app; a request for a
+  // specific page (openSettings("streaming")) still lands on that page.
+  const ios = isIos();
+  const [iosHome, setIosHome] = useState(() => ios && !settingsSectionRequest.section);
   const [browseOpen, setBrowseOpen] = useState(false);
   const browseRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -441,6 +449,7 @@ export function Settings({ visible = true }: { visible?: boolean }) {
   const pendingTab = useRef<string | null>(null);
   const handleNav = (id: SectionId, anchor?: string, tab?: string) => {
     closeBrowse();
+    setIosHome(false);
     setLanding(null);
     setPendingPage(null);
     // The five trackers are tabs of one panel rather than sections of their own, so a jump
@@ -478,12 +487,39 @@ export function Settings({ visible = true }: { visible?: boolean }) {
   useEffect(() => {
     if (!settingsSectionRequest.section) return;
     setLanding(null);
+    setIosHome(false);
     setActive(resolveSection(settingsSectionRequest.section));
   }, [settingsSectionRequest]);
 
   useEffect(() => {
     if (active !== "relay") setRelayMode("panel");
   }, [active]);
+
+  const openIosHome = () => {
+    setBrowseOpen(false);
+    setQuery("");
+    setIosHome(true);
+  };
+  useEffect(() => {
+    if (!ios) return;
+    const toRoot = () => {
+      setBrowseOpen(false);
+      setQuery("");
+      setIosHome(true);
+    };
+    window.addEventListener(IOS_SETTINGS_ROOT_EVENT, toRoot);
+    return () => window.removeEventListener(IOS_SETTINGS_ROOT_EVENT, toRoot);
+  }, [ios]);
+  // Search lives in the page browser; open it with the field focused.
+  const openIosSearch = () => {
+    setIosHome(false);
+    setBrowseOpen(true);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() =>
+        shellRef.current?.querySelector<HTMLInputElement>(".hset-tools input")?.focus(),
+      ),
+    );
+  };
 
   const [pageActions, setPageActions] = useState<PageActionReg>(null);
   const [subRegRaw, setSubReg] = useState<SubTabReg>(null);
@@ -601,6 +637,15 @@ export function Settings({ visible = true }: { visible?: boolean }) {
               className="hset-top-space shrink-0"
               style={{ blockSize: "var(--hset-chrome-h, 92px)" }}
             />
+            {iosHome ? (
+              <main ref={scrollRef} className="hset-main ios-settings-scroll">
+                <IosSettingsHome
+                  meta={SECTION_META}
+                  onOpen={(id) => handleNav(id)}
+                  onSearch={openIosSearch}
+                />
+              </main>
+            ) : (
             <div className="hset-grid" data-browse-open={compact && browseOpen ? "" : undefined}>
               <SettingsTools
                 query={query}
@@ -611,6 +656,12 @@ export function Settings({ visible = true }: { visible?: boolean }) {
                 onSubmit={handleNav}
               />
               <div className="hset-heading">
+                {ios && (
+                  <button type="button" className="hset-ios-back" onClick={openIosHome}>
+                    <ChevronLeft size={22} strokeWidth={2.4} className="dir-icon" />
+                    {t("Settings")}
+                  </button>
+                )}
                 <div className="hset-content">
                   <h1 ref={titleRef} tabIndex={-1} className="hset-title">
                     {t(landingGroup?.label ?? SECTION_META[active].label)}
@@ -758,6 +809,7 @@ export function Settings({ visible = true }: { visible?: boolean }) {
                 {pageActions && !chromeHidden && <SettingsFooter reg={pageActions} />}
               </main>
             </div>
+            )}
             <BackToTop scrollRef={scrollRef} />
           </div>
         </SubTabsProvider>

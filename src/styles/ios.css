@@ -46,6 +46,7 @@ html[data-os="ios"] [data-harbor-shell] .overflow-y-auto {
 /* Page scrollers: the desktop pads 96px under its topbar. On iOS there is no
    topbar, so pad to the status bar instead, and pad the bottom past the tab bar. */
 html[data-os="ios"] [data-harbor-shell] main.overflow-y-auto {
+  padding-inline: var(--ios-gutter) !important;
   padding-top: calc(var(--ios-safe-top) + 16px) !important;
   padding-bottom: calc(var(--ios-tabbar-space) + 24px) !important;
 }
@@ -520,6 +521,7 @@ html[data-os="ios"][data-ios-form="phone"] [data-home-nudge] .animate-nudge-in >
 
 html[data-os="ios"] [data-harbor-shell] main[data-detail-main] {
   padding-top: 0 !important;
+  padding-inline: 0 !important;
 }
 html[data-os="ios"] [data-detail-hero] {
   height: min(74svh, 640px) !important;
@@ -667,4 +669,276 @@ html[data-os="ios"][data-ios-form="phone"] [data-episode-row] .line-clamp-2 {
 html[data-os="ios"][data-ios-form="phone"] [data-episode-row] > :last-child button {
   height: 36px;
   width: 36px;
+}
+
+/* --------------------------------------------------------------- settings */
+
+html[data-os="ios"] .harbor-settings-shell .hset-top-space {
+  block-size: var(--ios-safe-top) !important;
+}
+html[data-os="ios"] .harbor-settings-shell .hset-main {
+  padding-bottom: calc(var(--ios-tabbar-space) + 20px);
+}
+html[data-os="ios"] .ios-settings-scroll {
+  height: 100%;
+  padding: 4px var(--ios-gutter) calc(var(--ios-tabbar-space) + 24px) !important;
+}
+.ios-settings {
+  display: flex;
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
+  flex-direction: column;
+  gap: 22px;
+}
+.ios-settings-title {
+  margin: 10px 0 -6px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--color-ink);
+}
+.ios-settings-search {
+  display: flex;
+  height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 16px;
+  color: var(--color-ink-subtle);
+  background: color-mix(in srgb, var(--color-ink) 9%, transparent);
+}
+.ios-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ios-settings-heading {
+  margin: 0;
+  padding-inline: 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-ink-subtle);
+}
+.ios-settings-group {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--color-surface);
+  border: 0.5px solid var(--ios-hairline);
+}
+.ios-settings-row,
+.ios-settings-profile {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  text-align: start;
+  transition: background-color 120ms ease;
+}
+.ios-settings-row + .ios-settings-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  inset-inline: 62px 0;
+  height: 0.5px;
+  background: var(--ios-hairline);
+}
+.ios-settings-row:active,
+.ios-settings-profile:active {
+  background: color-mix(in srgb, var(--color-ink) 8%, transparent);
+}
+.ios-settings-profile {
+  padding-block: 14px;
+}
+.ios-settings-icon {
+  display: inline-flex;
+  height: 34px;
+  width: 34px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 17%, transparent);
+}
+.ios-settings-row-text {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+.ios-settings-row-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.ios-settings-profile-name {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.ios-settings-row-sub {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-ink-subtle);
+}
+.ios-settings-chevron {
+  flex-shrink: 0;
+  color: var(--color-ink-subtle);
+}
+.ios-settings-version {
+  margin: 0;
+  padding: 2px 0 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-ink-subtle);
+}
+
+/* A settings page: "‹ Settings" sits above the page title, as in UIKit. */
+html[data-os="ios"] .hset-heading {
+  flex-wrap: wrap !important;
+  row-gap: 2px !important;
+}
+.hset-ios-back {
+  display: inline-flex;
+  flex-basis: 100%;
+  height: 36px;
+  align-items: center;
+  gap: 2px;
+  margin-inline-start: -8px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+.hset-ios-back:active {
+  opacity: 0.6;
+}
+
+/* ----------------------------------------------------------------- player */
+
+.ios-seek-flash {
+  position: absolute;
+  inset-block: 0;
+  width: 42%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgb(255 255 255 / 0.16), transparent);
+  animation: ios-seek-flash 650ms var(--ease-out) both;
+}
+.ios-seek-flash.is-back {
+  left: 0;
+  border-radius: 0 50% 50% 0 / 0 100% 100% 0;
+}
+.ios-seek-flash.is-forward {
+  right: 0;
+  border-radius: 50% 0 0 50% / 100% 0 0 100%;
+}
+.ios-seek-flash-label {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: white;
+  background: rgb(0 0 0 / 0.45);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+@keyframes ios-seek-flash {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ios-seek-flash {
+    animation: none;
+  }
+}
+
+/* Player chrome clears the status bar and the home indicator; the video
+   itself stays full screen underneath. */
+html[data-os="ios"] [data-transport-top] {
+  padding-top: calc(var(--ios-safe-top) + 8px) !important;
+}
+html[data-os="ios"] [data-transport-bottom] {
+  padding-bottom: calc(var(--ios-safe-bottom) + 10px) !important;
+}
+html[data-os="ios"][data-ios-orientation="landscape"] [data-transport-bottom] {
+  padding-bottom: max(12px, var(--ios-safe-bottom)) !important;
+}
+/* Touch targets: every transport button gets at least a 44pt hit area. */
+html[data-os="ios"] [data-transport-bottom] > .grid button,
+html[data-os="ios"] [data-transport-top] > div > button,
+html[data-os="ios"] [data-transport-top] > div > div > button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* ----------------------------------------------------------------- search */
+
+/* Search is the Search tab: a full-height sheet under the status bar with
+   the tab bar still on top, so another tab is one tap away. */
+html[data-os="ios"] [data-search-overlay] > .mx-auto {
+  padding: calc(var(--ios-safe-top) + 6px) 12px calc(var(--ios-tabbar-space) + 4px) !important;
+}
+html[data-os="ios"][data-ios-form="tablet"] [data-search-overlay] > .mx-auto {
+  padding-inline: 32px !important;
+}
+html[data-os="ios"] [data-search-overlay] .modal-panel {
+  border-radius: 22px;
+}
+html[data-os="ios"] body:has([data-search-overlay]) .ios-tabbar {
+  z-index: 210;
+}
+
+/* ---------------------------------------------------------------- library */
+
+html[data-os="ios"][data-ios-form="phone"] [data-library-header] > div:first-child {
+  flex-wrap: wrap;
+  row-gap: 14px;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-library-header] h1 {
+  font-size: 34px !important;
+}
+html[data-os="ios"][data-ios-form="phone"] [data-library-header] p {
+  font-size: 13px !important;
+}
+
+/* Landscape iPhone: the hero fills the screen, so its copy sits above the bar. */
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [data-hero-body] {
+  padding-bottom: calc(var(--ios-tabbar-height) + var(--ios-tabbar-gap) + 22px) !important;
+}
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [data-hero-title] img {
+  max-height: 72px !important;
+}
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [data-hero-desc] {
+  -webkit-line-clamp: 1 !important;
+  line-clamp: 1 !important;
+}
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [data-hero-actions] > button {
+  height: 44px !important;
+}
+html[data-os="ios"][data-ios-orientation="landscape"][data-ios-form="phone"] [data-hero-dots] {
+  bottom: calc(var(--ios-tabbar-height) + var(--ios-tabbar-gap) + 6px);
 }

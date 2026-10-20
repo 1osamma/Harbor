@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Compass, House, LibraryBig, Search } from "lucide-react";
 import { ParentalPinModal } from "@/components/parental-pin-modal";
 import { useAuth } from "@/lib/auth";
+import { IOS_SETTINGS_ROOT_EVENT } from "@/lib/ios-shell";
 import { useT } from "@/lib/i18n";
 import { useParental, type LockableTab } from "@/lib/parental";
 import { useProfiles } from "@/lib/profiles";
@@ -59,12 +61,18 @@ export function IosTabBar({ hidden }: { hidden: boolean }) {
       return;
     }
     if (searchOpen) setSearchOpen(false);
+    if (tab === "profile" && view === "settings") {
+      window.dispatchEvent(new Event(IOS_SETTINGS_ROOT_EVENT));
+      return;
+    }
     // Tapping the current tab from a pushed page pops back to its root, the
     // same as UITabBarController; on the root it re-runs the view's reset.
     setView(ROOT_VIEW[tab]);
   };
 
-  return (
+  // Portaled to <body>: #root is its own stacking context (position: fixed), so from inside it
+  // the bar could never sit above the body-level search sheet that the Search tab opens.
+  return createPortal(
     <>
       <nav
         aria-label={t("Navigation")}
@@ -120,7 +128,8 @@ export function IosTabBar({ hidden }: { hidden: boolean }) {
           verify={unlock}
         />
       )}
-    </>
+    </>,
+    document.body,
   );
 }
 
