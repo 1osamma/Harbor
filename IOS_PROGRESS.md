@@ -34,3 +34,13 @@ Not yet checked:
 - Actions enabled on the fork via the API. Branch `feature/harbor-ios` pushed.
 - `pnpm test` matches the upstream baseline exactly (6043 pass / 106 pre-existing failures).
 - First CI run: https://github.com/1osamma/Harbor/actions/runs/39344058176
+
+### Session 1, end: handed off to Codex
+
+- Run 4 (39347877439, `d7bc3823`): **simulator build + launch smoke test succeeded** on iPhone 16
+  Pro and iPad Pro 13" simulators. Harbor launched and rendered its error view
+  ("Plugin window not initialized"). The **device job built `Harbor.ipa` (173 MB, arm64)** but my
+  `nm -gU` inspection gave a false negative, so no IPA was uploaded.
+- Commit `00c8dfa3` fixes both (error-view filter on mobile; `strings`-based inspection; upload
+  regardless). Run 5 (39352217482) was cancelled after ~4 min, so these are **unverified**.
+- Development stopped at the owner's request. See CODEX_HANDOFF.md for the next task.

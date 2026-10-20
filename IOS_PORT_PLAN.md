@@ -50,7 +50,7 @@ Base: upstream `beta-branch` @ `cd2a0aff` (2026-10-18, Harbor 1.0.0 beta).
 - [~] Phase 2 — iOS foundation: config overlay, Info.plist, safe areas, chrome gating, viewport
 - [~] Phase 3 — native libmpv player through the existing bridge
 - [ ] Phase 4 — feature verification on simulator/device; iOS-specific fixes
-- [~] Phase 5 — IPA pipeline (workflow runs; Xcode project generation, MPVKit resolution and all Rust dependencies build for iOS; Harbor crate fixes in progress — see IOS_BUILD_LOG.md)
+- [~] Phase 5 — IPA pipeline: simulator build + launch succeeded (run 39347877439); device IPA builds (173 MB) but no artifact uploaded yet (inspection false negative, fix 00c8dfa3 unverified). See CODEX_HANDOFF.md.
 - [ ] Phase 6 — testing matrix filled with real results
 - [ ] Phase 7 — delivery docs (IOS_INSTALL.md written; artifact link pending)
 

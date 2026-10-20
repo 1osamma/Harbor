@@ -51,3 +51,14 @@ output, Dolby Vision, AV1 performance, Anime4K performance, and audio track/rout
   machine). All changes are cfg-gated to be desktop-neutral, but a desktop `cargo check` is
   still owed.
 - MoltenVK video output in the iOS **Simulator** may not render; judge playback on a device.
+
+## Open at handoff (2026-10-20)
+
+- **No downloadable IPA yet.** The device build succeeds (run 39347877439: `Harbor.ipa`, 173 MB),
+  but the old `nm -gU` inspection failed on the stripped binary before the upload step. The fix
+  (`strings` markers + unconditional upload, commit `00c8dfa3`) has not completed a run yet;
+  run 39352217482 was cancelled.
+- **Launch stops at Harbor's error view on iOS** ("Plugin window not initialized"): unhandled
+  rejections from desktop `window` plugin calls. Commit `00c8dfa3` makes them non-fatal on
+  mobile; unverified.
+- `gilrs` reports "does not support current platform" at startup on iOS (logged, harmless).

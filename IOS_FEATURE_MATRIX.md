@@ -7,8 +7,8 @@ Status legend:
 - **Blocked** — cannot work on iOS today; blocker given.
 - **Not ported** — possible on iOS, not done yet.
 
-> **State at handoff (2026-10-20): no iOS build has completed yet, so every Verified cell is empty.**
-> Dependencies compile for iOS; the Harbor crate, Swift layer and link step are still being fixed.
+> **State at handoff (2026-10-20):** the simulator build launched on iPhone + iPad simulators (CI run 39347877439) but stopped at an error view, and a 173 MB device IPA was built but not yet uploaded. No feature below has been verified, so every Verified cell is empty.
+> Rust, Swift, MPVKit and linking all succeed for iOS.
 
 "Verified" is only filled in with what was actually observed (CI log, simulator screenshot,
 device test). Compiling is not verification.
@@ -17,7 +17,7 @@ device test). Compiling is not verification.
 
 | Feature | Status | Verified | Notes |
 |---|---|---|---|
-| Launch, splash, main shell | Ported | – | Desktop shell in WKWebView; boot waits only on caught promises. |
+| Launch, splash, main shell | Partial | Simulator (run 39347877439): launches, renders inside the safe area, then shows the "Plugin window not initialized" error view. Fix in 00c8dfa3 not yet verified. | Desktop shell in WKWebView; boot waits only on caught promises. |
 | Navigation (sidebar/topbar/rail layouts) | Shared | – | Touch = pointer events; hover-only affordances may need tap equivalents. |
 | iPad layout | Ported | – | Native width (≥960 CSS px in landscape on all iPads; most in portrait). |
 | iPhone layout | Partial | – | Viewport widened to 960 CSS px and scaled. Readable in landscape; small in portrait. Compact layout not built. |
